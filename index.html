@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Data Detectives</title>
+<meta name="description" content="Landslide trends, El Niño and prediction with NASA and NOAA data.">
+<link rel="icon" href="assets/logo.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav" aria-label="Menu">
+  <a class="brand" href="#topo">
+    <span class="brand-logo"><img src="assets/logo.webp" alt="Data Detectives" onerror="this.closest('.brand').classList.add('no-logo')"></span>
+    <span class="brand-text"><span class="brand-mark"><i></i><i></i></span><span>Data<br>Detectives</span></span>
+  </a>
+  <div class="pills">
+    <a class="pill" href="#s1" data-i18n="nav1">1 · Lugar</a>
+    <a class="pill" href="#s2" data-i18n="nav2">2 · ENSO</a>
+    <a class="pill" href="#s3" data-i18n="nav3">3 · Comparar</a>
+    <a class="pill" href="#s4" data-i18n="nav4">4 · Modelos</a>
+    <a class="pill" href="#s5" data-i18n="nav5">5 · Métodos</a>
+    <div class="lang" role="group" aria-label="Idioma / Language / Idioma">
+      <button type="button" data-lang="pt" aria-pressed="true">PT</button><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button>
+    </div>
+    <a class="pill cta" href="#busca-wrap" data-i18n="navcta">Investigar</a>
+  </div>
+</nav>
+
+<header class="hero" id="topo">
+  <div class="hero-copy">
+    <p class="kicker">NASA Space Apps 2026 · Earth System Trend Detective</p>
+    <h1 data-i18n="h1">Encostas não caem por acaso. <em>Elas acumulam sinais.</em></h1>
+    <p class="sub" data-i18n="sub">Busque qualquer lugar do planeta. O Data Detectives baixa as séries da NASA na hora, testa tendências, mede a influência do El Niño e estima o risco de deslizamento com dois modelos de machine learning.</p>
+    <form class="search" id="busca-wrap" role="search" autocomplete="off">
+      <label class="sr" for="busca" data-i18n="searchlbl">Buscar lugar</label>
+      <input id="busca" type="search" data-i18n-ph="searchph" placeholder="Cidade, bairro ou região. Ex.: Petrópolis, Medellín, Kathmandu" aria-autocomplete="list" aria-controls="busca-res">
+      <button class="go" type="submit" data-i18n="go">Investigar</button>
+      <ul class="results-list" id="busca-res" role="listbox" hidden></ul>
+    </form>
+    <div class="suggest" id="suggest"></div>
+  </div>
+  <div class="globe-stage">
+    <div id="globe" role="img" aria-label="Globe"></div>
+    <div class="hero-under">
+      <div class="filters">
+        <span class="lbl" data-i18n="layer">Camada do globo</span>
+        <div class="chips" id="layer-chips">
+          <button class="chip" type="button" data-l="ev" aria-pressed="false" data-i18n="layer_ev">Eventos registrados</button>
+          <button class="chip" type="button" data-l="risk" aria-pressed="true" data-i18n="layer_risk">Risco estrutural (ML)</button>
+          <button class="chip" type="button" data-l="rain" aria-pressed="false" data-i18n="layer_rain">Chuva (IMERG)</button>
+          <button class="chip" type="button" data-l="soil" aria-pressed="false" data-i18n="layer_soil">Solo (SMAP)</button>
+          <button class="chip" type="button" data-l="haz" aria-pressed="false" data-i18n="layer_haz">Perigo (NASA)</button>
+          <button class="chip" type="button" data-l="sat" aria-pressed="false" data-i18n="layer_sat">Satélite (VIIRS)</button>
+        </div>
+        <div id="gibs-ctl" hidden><img id="gibs-legend" alt=""><span class="cap" id="gibs-note"></span></div>
+        <div id="risk-ctl">
+          <label class="lbl" for="risk-month"><span data-i18n="horizon">Horizonte</span>: <b id="risk-month-lbl"></b></label>
+          <input type="range" id="risk-month" min="0" max="12" step="1" value="0">
+          <div class="colorbar" id="colorbar"></div>
+        </div>
+        <span class="count" id="pt-count"></span>
+      </div>
+      <dl class="hero-stats" id="hero-stats"></dl>
+    </div>
+    <span class="hint" data-i18n="hint">Arraste para girar · clique em qualquer lugar para investigar</span>
+  </div>
+</header>
+
+<section class="band-light abstract" aria-labelledby="resumo-h">
+  <div class="wrap abs-grid">
+    <div>
+      <img class="abs-logo" src="assets/logo.webp" alt="Data Detectives" onerror="this.remove()">
+      <span class="eyebrow" data-i18n="abs_eb">Resumo</span>
+      <h2 id="resumo-h" data-i18n="abs_h">Detectar a tendência antes da tragédia.</h2>
+    </div>
+    <div class="abs-text">
+      <p id="abs-p"></p>
+      <p class="keywords" data-i18n="keywords"><b>Palavras-chave:</b> deslizamentos de terra · MERRA-2 · Mann-Kendall · ENSO · gradient boosting · NASA POWER</p>
+    </div>
+  </div>
+  <div class="wrap"><dl class="abs-nums" id="abs-nums"></dl></div>
+</section>
+
+<section class="band-dark place-band" id="s1" aria-live="polite">
+  <div class="wrap">
+    <div class="place-head">
+      <div>
+        <span class="eyebrow" data-i18n="s1_eb">1 · Investigação do lugar</span>
+        <h2 id="pl-name"></h2>
+        <div class="coord" id="pl-coord"></div>
+      </div>
+      <div class="place-actions">
+        <span class="status" id="pl-status"></span>
+        <a class="pill" id="pl-wv" href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener" data-i18n="wv">Ver no NASA Worldview ↗</a>
+        <button class="pill" type="button" id="pl-csv" data-i18n="csv">Baixar dados (CSV)</button>
+        <button class="pill" type="button" id="pl-save"></button>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <article class="tile">
+        <div class="tile-top"><span class="tile-k" data-i18n="t_now">Gatilho agora</span><span class="src">ML · NASA POWER</span></div>
+        <div class="tile-main"><span class="big" id="now-score">–</span><span class="badge" id="now-badge"></span></div>
+        <p class="tile-txt" id="now-txt"></p>
+      </article>
+      <article class="tile">
+        <div class="tile-top"><span class="tile-k" data-i18n="t_struct">Risco estrutural</span><span class="src" data-i18n="t_struct_src">ML · catálogo</span></div>
+        <div class="tile-main"><span class="big" id="st-prob">–</span><span class="badge" id="st-badge"></span></div>
+        <p class="tile-txt" id="st-txt"></p>
+      </article>
+      <article class="tile">
+        <div class="tile-top"><span class="tile-k" data-i18n="t_enso">ENSO aqui</span><span class="src">NOAA ONI × NASA POWER</span></div>
+        <div class="tile-main"><span class="big" id="en-delta">–</span><span class="badge" id="en-badge"></span></div>
+        <p class="tile-txt" id="en-txt"></p>
+      </article>
+      <article class="tile">
+        <div class="tile-top"><span class="tile-k" data-i18n="t_slope">Terreno</span><span class="src">Copernicus DEM</span></div>
+        <div class="tile-main"><span class="big" id="sl-deg">–</span><span class="badge" id="sl-badge"></span></div>
+        <p class="tile-txt" id="sl-txt"></p>
+      </article>
+    </div>
+
+    <figure class="fig dark">
+      <div class="fig-head"><h3 data-i18n="f1_h">Condições dos últimos 120 dias</h3><span class="src" id="recent-src"></span></div>
+      <div class="chart-wrap"><svg id="recent" viewBox="0 0 960 360"></svg></div>
+      <figcaption data-i18n="f1_cap"><b>Figura 1.</b> (a) Chuva diária (barras) e acumulado móvel de 7 dias (linha), com o percentil 95 local do acumulado de 7 dias (tracejado). (b) Umidade do solo superficial (GWETTOP, 0–1) e seu percentil 80. (c) Índice do modelo de disparo; tracejados marcam as faixas Elevado, Alto e Muito alto (percentis 90, 97 e 99 de dias comuns). Fonte: NASA POWER, MERRA-2.</figcaption>
+    </figure>
+
+    <div class="split">
+      <figure class="fig dark">
+        <div class="fig-head"><h3 data-i18n="f2_h">Tendência de longo prazo</h3><span class="verdict" id="verdict"></span></div>
+        <div class="chips" id="vars"></div>
+        <p class="vardef" id="vardef"></p>
+        <div class="chart-wrap"><svg id="trend" viewBox="0 0 640 300"></svg></div>
+        <dl class="results" id="results"></dl>
+        <figcaption data-i18n="f2_cap"><b>Figura 2.</b> Série anual com reta de mínimos quadrados e intervalo de confiança de 95% da média ajustada. Pontos coloridos pela fase do ENSO no ano (<span class="k-nino">El Niño</span>, <span class="k-nina">La Niña</span>, neutro). Significância pelo teste de Mann-Kendall (bicaudal, α = 0,05); inclinação de Sen por década.</figcaption>
+      </figure>
+      <figure class="fig dark">
+        <div class="fig-head"><h3 data-i18n="f3_h">Resposta ao El Niño e à La Niña</h3></div>
+        <div class="mini-head" data-i18n="f3_a">(a) Anomalia de chuva mensal por fase</div>
+        <svg class="mini" id="enso-comp" viewBox="0 0 420 170"></svg>
+        <div class="mini-head" data-i18n="f3_b">(b) Dias de disparo por mês, por fase</div>
+        <svg class="mini" id="enso-trig" viewBox="0 0 420 120"></svg>
+        <div class="mini-head" data-i18n="f3_c">(c) Correlação ONI × anomalia de chuva, por defasagem</div>
+        <svg class="mini" id="enso-lag" viewBox="0 0 420 150"></svg>
+        <figcaption data-i18n="f3_cap"><b>Figura 3.</b> (a) Média ± erro padrão da anomalia mensal de chuva (mm/mês, relativa à climatologia de cada mês) em El Niño, neutro e La Niña; p-valor do teste t de Welch contra neutro. (b) Dias por mês com acumulado de 7 dias acima do percentil 95 e solo acima do percentil 80. (c) Correlação de Pearson entre o ONI defasado e a anomalia de chuva; faixa cinza: limite de significância a 5% com tamanho efetivo de amostra corrigido pela autocorrelação.</figcaption>
+      </figure>
+    </div>
+
+    <figure class="fig dark">
+      <div class="fig-head"><h3 data-i18n="f4_h">O que já aconteceu aqui</h3><div class="chips" id="radius-chips"><button class="chip" type="button" data-r="100" aria-pressed="false">100 km</button><button class="chip" type="button" data-r="250" aria-pressed="true">250 km</button><button class="chip" type="button" data-r="500" aria-pressed="false">500 km</button></div></div>
+      <div class="hist-grid">
+        <div><dl class="kpis" id="pl-kpis"></dl><p class="episode" id="pl-episode"></p><div class="trig-list" id="pl-trig"></div></div>
+        <div><div class="mini-head" data-i18n="f4_a">(a) Eventos registrados por mês</div><svg class="mini" id="pl-season" viewBox="0 0 300 92"></svg></div>
+        <div><div class="mini-head" data-i18n="f4_b">(b) Risco estrutural previsto por mês</div><svg class="mini" id="pl-pred" viewBox="0 0 300 92"></svg></div>
+      </div>
+      <figcaption data-i18n="f4_cap"><b>Figura 4.</b> Eventos do Global Landslide Catalog no raio escolhido (2007–2017) e probabilidade mensal prevista pelo modelo estrutural para a célula de 1° que contém o ponto. Um único temporal pode gerar dezenas de registros no mesmo dia; o maior episódio aparece ao lado dos totais.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band-light" id="s2">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s2_eb">2 · El Niño e La Niña</span><h2 data-i18n="s2_h">O Pacífico aquece, encostas do outro lado do mundo sentem.</h2></div>
+      <p id="enso-intro"></p>
+    </div>
+    <figure class="fig">
+      <div class="fig-head"><h3 data-i18n="f5_h">Oceanic Niño Index, 1950–hoje</h3><span class="src" id="oni-src"></span></div>
+      <div class="chart-wrap"><svg id="oni-chart" viewBox="0 0 960 260"></svg></div>
+      <figcaption data-i18n="f5_cap"><b>Figura 5.</b> ONI: média móvel de 3 meses da anomalia de temperatura da superfície do mar na região Niño 3.4 (5° N–5° S, 120°–170° O). Episódios de El Niño (≥ +0,5 °C) e La Niña (≤ −0,5 °C) exigem pelo menos 5 estações consecutivas acima do limiar. Fonte: NOAA Climate Prediction Center.</figcaption>
+    </figure>
+    <figure class="fig">
+      <div class="fig-head"><h3 data-i18n="f6_h">Deslizamentos registrados por fase, por região</h3></div>
+      <div class="chart-wrap"><svg id="enso-regions" viewBox="0 0 960 330"></svg></div>
+      <figcaption data-i18n="f6_cap"><b>Figura 6.</b> Eventos mensais do Global Landslide Catalog (2007–2017) divididos pela média do próprio ano, para reduzir o efeito do aumento de catalogação; média ± erro padrão por fase do ENSO. Valores acima de 1 indicam meses com mais registros que o normal daquele ano. São só 11 anos e poucos episódios: leia como indício, não como prova.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band-mist" id="s3">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s3_eb">3 · Comparar lugares</span><h2 data-i18n="s3_h">Mesmo processo, sinais opostos.</h2></div>
+      <p data-i18n="s3_p">Adicione lugares para comparar lado a lado o gatilho atual, o risco estrutural, a resposta ao ENSO e a tendência. Todos os números são calculados com dados baixados da NASA.</p>
+    </div>
+    <div class="cmp-tools"><span class="lbl-dark" data-i18n="cmp_var">Variável da tendência</span><div class="chips light" id="cmp-vars"></div></div>
+    <div class="tbl-wrap">
+      <table class="cmp-table">
+        <thead><tr><th data-i18n="th_place">Lugar</th><th data-i18n="t_now">Gatilho agora</th><th data-i18n="t_struct">Risco estrutural</th><th data-i18n="th_enso">El Niño − neutro</th><th data-i18n="th_slope">Declividade</th><th id="cmp-th"></th><th></th></tr></thead>
+        <tbody id="cmp-body"></tbody>
+      </table>
+    </div>
+    <p class="empty" id="cmp-empty" data-i18n="cmp_empty">Nenhum lugar na comparação ainda. Investigue um lugar e use “Adicionar à comparação”.</p>
+    <figure class="fig" id="div-fig">
+      <svg id="div-chart" viewBox="0 0 640 120"></svg>
+      <figcaption data-i18n="f7_cap"><b>Figura 7.</b> Inclinação de Sen por década da variável escolhida em cada lugar. Ponto cheio: tendência significativa pelo Mann-Kendall (p &lt; 0,05).</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band-light" id="s4">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s4_eb">4 · Machine learning</span><h2 data-i18n="s4_h">Dois modelos, duas perguntas.</h2></div>
+      <p data-i18n="s4_p">Ambos são gradient boosting (scikit-learn), treinados com dados reais e avaliados em dados que não viram no treino. O modelo de disparo roda no seu navegador sobre os dados da NASA baixados na hora.</p>
+    </div>
+    <div class="models">
+      <article class="model">
+        <span class="role" data-i18n="m1_role">Quando?</span>
+        <h3 data-i18n="m1_h">Modelo de disparo</h3>
+        <p data-i18n="m1_p">Compara a chuva e o solo nos dias em que deslizamentos foram registrados com dias comuns no mesmo lugar. As variáveis são percentis do clima local, então o modelo vale em qualquer parte do mundo.</p>
+        <dl class="ml-metrics" id="m1-metrics"></dl>
+        <figure class="fig plain"><svg class="imp" id="m1-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f8_cap"><b>Figura 8.</b> Importância por permutação (queda no AUC ao embaralhar cada variável) no teste de 2015–2017.</figcaption></figure>
+      </article>
+      <article class="model">
+        <span class="role" data-i18n="m2_role">Onde?</span>
+        <h3 data-i18n="m2_h">Modelo estrutural</h3>
+        <p data-i18n="m2_p">Estima, para cada célula de 1° × 1° e cada mês, a chance de pelo menos um deslizamento ser registrado nos dois anos seguintes, a partir do histórico do catálogo.</p>
+        <dl class="ml-metrics" id="m2-metrics"></dl>
+        <figure class="fig plain"><svg class="imp" id="m2-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f9_cap"><b>Figura 9.</b> Importância por permutação no teste de 2015–2016.</figcaption></figure>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band-mist" id="s5">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s5_eb">5 · Métodos</span><h2 data-i18n="s5_h">Como cada número é calculado.</h2></div>
+      <p data-i18n="s5_p">Tudo que aparece na seção 1 é recalculado no navegador a partir das séries diárias. As fórmulas abaixo são as usadas no código.</p>
+    </div>
+    <div class="methods">
+      <article class="method"><h3 data-i18n="m51_h">5.1 Índices anuais</h3>
+        <p data-i18n="m51_p1">Com a chuva diária <span class="tex">P_t</span> (mm), o acumulado móvel de <span class="tex">k</span> dias é</p>
+        <div class="eq" data-tex="R^{(k)}_t = \sum_{i=0}^{k-1} P_{t-i}"></div>
+        <div class="eq" data-tex="\mathrm{Rx5day}_y = \max_{t \in y} R^{(5)}_t"></div>
+        <p data-i18n="m51_p2">Um <b>dia de disparo</b> ocorre quando <span class="tex">R^{(7)}_t > q_{0.95}(R^{(7)})</span> e <span class="tex">\mathrm{GWETTOP}_{t-1} > q_{0.80}</span>, com percentis do próprio lugar.</p>
+      </article>
+      <article class="method"><h3 data-i18n="m52_h">5.2 Teste de Mann-Kendall</h3>
+        <div class="eq" data-tex="S=\sum_{i<j}\operatorname{sgn}(x_j-x_i)"></div>
+        <div class="eq" data-tex="\operatorname{Var}(S)=\frac{n(n-1)(2n+5)}{18}"></div>
+        <p data-i18n="m52_p1">com correção para valores empatados (grupos de tamanho <span class="tex">t_g</span>).</p>
+        <div class="eq" data-tex="Z=\frac{S-\operatorname{sgn}(S)}{\sqrt{\operatorname{Var}(S)}},\quad p = 2\,[1-\Phi(|Z|)]"></div>
+        <p data-i18n="m52_p2">A magnitude é a inclinação de Sen, <span class="tex">\beta=\operatorname{mediana}\{(x_j-x_i)/(j-i)\}</span>, informada por década.</p>
+      </article>
+      <article class="method"><h3 data-i18n="m53_h">5.3 Fases do ENSO</h3>
+        <p data-i18n="m53_p1">Cada estação de 3 meses do ONI é atribuída ao mês central. Um mês é El Niño se fizer parte de uma sequência de pelo menos 5 meses com ONI ≥ +0,5 °C; La Niña, com ONI ≤ −0,5 °C. As fases são comparadas com o teste t de Welch:</p>
+        <div class="eq" data-tex="t=\frac{\bar a_1-\bar a_2}{\sqrt{s_1^2/n_1+s_2^2/n_2}}"></div>
+        <div class="eq" data-tex="n_\text{ef}=n\,\frac{1-\rho_1\rho_2}{1+\rho_1\rho_2}"></div>
+        <p data-i18n="m53_p2">O tamanho efetivo <span class="tex">n_\text{ef}</span> corrige a correlação pela autocorrelação de lag 1 das duas séries.</p>
+      </article>
+      <article class="method"><h3 data-i18n="m54_h">5.4 Modelos de gradient boosting</h3>
+        <div class="eq" data-tex="\hat p(\mathbf x)=\sigma\Big(F_0+\sum_{m=1}^{M}\nu\,h_m(\mathbf x)\Big)"></div>
+        <div class="eq" data-tex="\sigma(z)=\frac{1}{1+e^{-z}}"></div>
+        <p data-i18n="m54_p">Cada <span class="tex">h_m</span> é uma árvore de regressão ajustada ao gradiente da log-verossimilhança. O modelo de disparo usa 16 variáveis de chuva e solo e foi validado deixando lugares inteiros fora do treino (GroupKFold) e anos inteiros fora do treino.</p>
+      </article>
+      <article class="method"><h3 data-i18n="m55_h">5.5 Declividade</h3>
+        <div class="eq" data-tex="\theta=\arctan\sqrt{\Big(\tfrac{z_E-z_W}{2\Delta x}\Big)^2+\Big(\tfrac{z_N-z_S}{2\Delta y}\Big)^2}"></div>
+        <p data-i18n="m55_p">Diferenças centradas com <span class="tex">\Delta \approx 280</span> m sobre o Copernicus DEM de 90 m.</p>
+      </article>
+      <article class="method"><h3 data-i18n="m56_h">5.6 Reprodutibilidade</h3>
+        <p data-i18n="m56_p">O botão “Baixar dados (CSV)” exporta as séries mensais usadas nas figuras. Os scripts de treino estão em <code>scripts/</code>, e as árvores dos modelos ficam em <code>data/models.json</code>.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="band-light" id="s6">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s6_eb">6 · Dados</span><h2 data-i18n="s6_h">De onde vem cada número.</h2></div>
+      <p data-i18n="s6_p">Fontes públicas e gratuitas. As marcadas como “ao vivo” são chamadas direto do seu navegador.</p>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th data-i18n="d_src">Fonte</th><th data-i18n="d_what">Mede</th><th data-i18n="d_per">Período</th><th data-i18n="d_acc">Acesso</th><th data-i18n="d_use">Uso</th></tr></thead>
+        <tbody>
+          <tr><td class="ds">NASA POWER<span class="code">MERRA-2 · PRECTOTCORR, GWETTOP, GWETROOT, T2M</span></td><td class="use" data-i18n="d1">Chuva, umidade do solo e temperatura diárias, ~0,5° × 0,625°</td><td class="per">1981–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag">Fig. 1–3</span><span class="tag" data-i18n="train">Treino</span></td></tr>
+          <tr><td class="ds">NOAA CPC ONI<span class="code">Niño 3.4 · ERSST</span></td><td class="use" data-i18n="d2">Índice do El Niño / La Niña</td><td class="per">1950–</td><td><span class="tag"><span data-i18n="file">arquivo</span>, <span id="oni-upd"></span></span></td><td><span class="tag">Fig. 2, 3, 5, 6</span></td></tr>
+          <tr><td class="ds">Global Landslide Catalog<span class="code">NASA Goddard</span></td><td class="use" data-i18n="d3">Deslizamentos relatados: local, data, gatilho, mortes</td><td class="per">2007–2017</td><td><span class="tag" data-i18n="file">arquivo</span></td><td><span class="tag" data-i18n="globe">Globo</span><span class="tag" data-i18n="train">Treino</span></td></tr>
+          <tr><td class="ds">NASA GIBS / Worldview<span class="code">IMERG · SMAP L4 · VIIRS · NDH Landslide Hazard</span></td><td class="use" data-i18n="d7">Imagens diárias de chuva, umidade do solo e satélite; perigo de deslizamento</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="globe">Globo</span><span class="tag">Worldview</span></td></tr>
+          <tr><td class="ds">Copernicus DEM<span class="code">Open-Meteo Elevation · 90 m</span></td><td class="use" data-i18n="d4">Altitude</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="t_slope">Terreno</span></td></tr>
+          <tr><td class="ds">Open-Meteo Geocoding<span class="code">GeoNames</span></td><td class="use" data-i18n="d5">Busca de lugares</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="search">Busca</span></td></tr>
+          <tr><td class="ds">OpenStreetMap Nominatim</td><td class="use" data-i18n="d6">Nome do ponto clicado</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="globe">Globo</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="fig" style="margin-top:40px">
+      <div class="fig-head"><h3 data-i18n="f10_h">Gatilhos declarados no catálogo</h3></div>
+      <div class="trigger-bar" id="trigger-bar" role="img"></div>
+      <div class="trigger-legend" id="trigger-legend"></div>
+      <figcaption data-i18n="f10_cap"><b>Figura 10.</b> Gatilho declarado de cada evento do Global Landslide Catalog. Por isso o modelo de disparo usa só chuva e solo.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="band-mist" id="s7">
+  <div class="wrap">
+    <div class="section-head">
+      <div><span class="eyebrow" data-i18n="s7_eb">7 · Limitações</span><h2 data-i18n="s7_h">Mais registros não querem dizer mais deslizamentos.</h2></div>
+      <p data-i18n="s7_p">O catálogo nasce de notícias. Quando a cobertura muda, a contagem muda junto. Por isso ele treina e valida os modelos, mas as tendências são medidas nas variáveis físicas.</p>
+    </div>
+    <div class="limits">
+      <figure class="fig plain">
+        <svg id="year-chart" viewBox="0 0 640 300"></svg>
+        <div class="cmp" id="cmp"></div>
+        <figcaption data-i18n="f11_cap"><b>Figura 11.</b> Eventos por ano no catálogo e comparação de eventos e mortes por país. O salto de 2010 coincide com uma La Niña forte, o que confunde qualquer leitura direta.</figcaption>
+      </figure>
+      <div class="limit-list">
+        <div><h3 data-i18n="l1_h">Viés de notícia</h3><p id="l1-p"></p></div>
+        <div><h3 data-i18n="l2_h">Escala</h3><p data-i18n="l2_p">O pixel do MERRA-2 tem cerca de 50 km. Um deslizamento tem dezenas de metros. O índice mede condições regionais.</p></div>
+        <div><h3 data-i18n="l3_h">ENSO não é destino</h3><p data-i18n="l3_p">As composições mostram médias históricas. Cada El Niño é diferente, e o sinal muda conforme a estação do ano.</p></div>
+        <div><h3 data-i18n="l4_h">Não é alerta oficial</h3><p data-i18n="l4_p">Em risco real, siga a Defesa Civil e o serviço meteorológico local.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band-light refs-band" id="refs">
+  <div class="wrap">
+    <span class="eyebrow" data-i18n="refs">Referências</span>
+    <ol class="refs">
+      <li>Kirschbaum, D. B.; Stanley, T.; Zhou, Y. (2015). Spatial and temporal analysis of a global landslide catalog. <i>Geomorphology</i>, 249, 4–15.</li>
+      <li>Kirschbaum, D.; Stanley, T. (2018). Satellite-based assessment of rainfall-triggered landslide hazard for situational awareness. <i>Earth's Future</i>, 6, 505–523.</li>
+      <li>Stanley, T.; Kirschbaum, D. B. (2017). A heuristic approach to global landslide susceptibility mapping. <i>Natural Hazards</i>, 87, 145–164.</li>
+      <li>Gelaro, R. et al. (2017). The Modern-Era Retrospective Analysis for Research and Applications, Version 2 (MERRA-2). <i>Journal of Climate</i>, 30, 5419–5454.</li>
+      <li>NASA Langley Research Center. POWER Project: Prediction Of Worldwide Energy Resources. power.larc.nasa.gov.</li>
+      <li>NOAA Climate Prediction Center. Oceanic Niño Index (ONI). cpc.ncep.noaa.gov.</li>
+      <li>Huang, B. et al. (2017). Extended Reconstructed Sea Surface Temperature, Version 5 (ERSSTv5). <i>Journal of Climate</i>, 30, 8179–8205.</li>
+      <li>Mann, H. B. (1945). Nonparametric tests against trend. <i>Econometrica</i>, 13, 245–259.</li>
+      <li>Kendall, M. G. (1975). <i>Rank Correlation Methods</i>. London: Griffin.</li>
+      <li>Sen, P. K. (1968). Estimates of the regression coefficient based on Kendall's tau. <i>Journal of the American Statistical Association</i>, 63, 1379–1389.</li>
+      <li>Welch, B. L. (1947). The generalization of “Student's” problem when several different population variances are involved. <i>Biometrika</i>, 34, 28–35.</li>
+      <li>Bretherton, C. S. et al. (1999). The effective number of spatial degrees of freedom of a time-varying field. <i>Journal of Climate</i>, 12, 1990–2009.</li>
+      <li>Friedman, J. H. (2001). Greedy function approximation: a gradient boosting machine. <i>Annals of Statistics</i>, 29, 1189–1232.</li>
+      <li>NASA Global Imagery Browse Services (GIBS) e NASA Worldview. earthdata.nasa.gov/gibs.</li>
+      <li>CIESIN; Columbia University (2005). Global Landslide Hazard Distribution. NASA SEDAC, Natural Disaster Hotspots.</li>
+      <li>Pedregosa, F. et al. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research</i>, 12, 2825–2830.</li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p data-i18n="foot1">Data Detectives · NASA Space Apps Challenge 2026 · desafio Earth System Trend Detective. Dados: NASA POWER, NASA Global Landslide Catalog, NOAA CPC, Copernicus DEM, GeoNames, © OpenStreetMap.</p>
+    <p data-i18n="foot2">Ferramenta de estudo. Não substitui alertas oficiais.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.4/dist/globe.gl.min.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
