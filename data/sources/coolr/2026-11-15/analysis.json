@@ -1,0 +1,76 @@
+{
+  "comparison_local_glc": {
+    "changed_fields_within_common": {
+      "coordinates": 718,
+      "event_date": 4,
+      "location_accuracy": 28,
+      "source_name": 44
+    },
+    "common_event_ids": 11030,
+    "only_current": 3720,
+    "only_local": 3
+  },
+  "event_date_present": 13113,
+  "event_import_source": {
+    "CAS": 165,
+    "Combeima": 366,
+    "DIAS": 201,
+    "GLC": 11452,
+    "LIWEAR": 154,
+    "LRC": 318,
+    "ODOT": 768,
+    "RMD": 255,
+    "SMMML": 1071
+  },
+  "event_period": {
+    "max": "2025-05-18",
+    "min": "1915-12-15"
+  },
+  "geometry_attribute_mismatches": 34,
+  "integration_decision": "not_integrated; shared IDs and changed records require an explicit version/duplicate policy",
+  "invalid_coordinates": 27,
+  "license": null,
+  "location_accuracy": {
+    "100km": 43,
+    "10km": 1646,
+    "1km": 2668,
+    "250km": 28,
+    "25km": 1586,
+    "50km": 830,
+    "5km": 3683,
+    "<missing>": 30,
+    "Known exactly": 7,
+    "Known within 1 km": 15,
+    "Known within 10 km": 2,
+    "Known within 5 km": 2,
+    "Unknown": 201,
+    "exact": 3211,
+    "unknown": 798
+  },
+  "metadata_note": "FeatureServer did not expose a semantic dataset version or an explicit reuse license in the audited metadata; verify terms before redistribution.",
+  "records": 14750,
+  "source_name_top20": {
+    "Development of the Landslide Susceptibility Map of Attica Region, Greece, Based on the Method of Rock Engineering System": 201,
+    "Geol_survey": 154,
+    "Monsieurs, E., Jacobs, L., Michellier, C. et al. Landslides (2018).": 154,
+    "NASA SERVIR Science Coordination Office & SERVIR-Mekong": 1071,
+    "Oregon DOT": 768,
+    "Seattle Times": 41,
+    "Spatio-temporal distribution of slides (1999-2015) in Combeima's River hydrographic basin, Colombia": 366,
+    "The Himalayan Times": 47,
+    "The Hindu": 69,
+    "The Jakarta Post": 49,
+    "The Times of India": 42,
+    "Times of India": 59,
+    "articles.timesofindia.indiatimes.com": 41,
+    "ibnlive.in": 56,
+    "maps.google.com": 104,
+    "news.xinhuanet": 74,
+    "newsinfo.inquirer": 71,
+    "reliefweb": 40,
+    "thehimalayantimes": 75,
+    "thejakartapost": 59
+  },
+  "unique_event_ids": 14750,
+  "version": null
+}

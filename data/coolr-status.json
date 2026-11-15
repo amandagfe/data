@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "audited_at_utc": "2026-11-15T11:22:33.580218+00:00",
+  "official_overview": "https://gpm.nasa.gov/applications/landslides/coolr",
+  "source_manifest": "data/sources/coolr/2026-11-15/manifest.json",
+  "source_analysis": "data/sources/coolr/2026-11-15/analysis.json",
+  "published_catalog": {
+    "records": 14753,
+    "event_period": {
+      "min": "1915-12-15",
+      "max": "2025-05-18"
+    },
+    "used_by_interface": true,
+    "used_by_models": false
+  },
+  "integrated_snapshot": {
+    "component": "COOLR Reports Points",
+    "records": 14750,
+    "unique_event_ids": 14750,
+    "event_date_present": 13113,
+    "event_period_among_dated_records": {
+      "min": "1915-12-15",
+      "max": "2025-05-18"
+    },
+    "invalid_coordinates": 27,
+    "comparison_with_published": {
+      "common_event_ids": 11030,
+      "only_coolr_ids": 3720,
+      "only_local_ids": 3,
+      "changed_common_records": {
+        "coordinates": 718,
+        "event_date": 4,
+        "location_accuracy": 28,
+        "source_name": 44
+      }
+    },
+    "used_by_interface_results": false,
+    "used_by_models": false
+  },
+  "integration_status": "integrated_with_explicit_event_id_policy",
+  "integration_reason": "COOLR supersedes the local row for a shared event_id; COOLR-only and local-only IDs are preserved; no proximity-based deduplication is applied.",
+  "version": null,
+  "license": null
+}

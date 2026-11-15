@@ -1,0 +1,826 @@
+{
+  "audited_at_utc": "2026-11-15T11:22:33.580218+00:00",
+  "manifest_schema": "data-detectives-coolr-audit/v1",
+  "official_overview": "https://gpm.nasa.gov/applications/landslides/coolr",
+  "scope_note": "COOLR contains report-based and event-based components; local GLC coverage is not COOLR coverage.",
+  "services": {
+    "events_points": {
+      "copyright": "NASA Goddard Space Flight Center, landslides.nasa.gov",
+      "count_at_audit": 40154,
+      "description": "The Cooperative Open Online Landslide Repository (COOLR) contains citizen science data from Landslide Reporter Catalog (LRC), data from NASA’s Global Landslide Catalog (GLC), NASA manually or automatically digitized landslides, and other inventories contributed by the research community. These are sorted into two main layers, \"coolr_reports\" and \"coolr_events\". The layers are further differentiated into a point or polygon layer, named accordingly. Within these layers, the user can further query out the manual or automated landslide inventories, events of a certain date, event triggers, and more. Each feature has a “title” in the attribute table with the digitization method, location, and event date (written as YYYY-MM-DD). The citation for each event inventory is located within the attribute table field “citation”. See the methods section for further detail about manual vs automatic landslide detection. For more information about the fields, see the How-to-Guide documentation under the “Trainings” tab at https://landslides.nasa.gov and the publications below.  The citation for each event inventory is located within the attribute table field “citation”. If you utilize this inventory, please reference each citation of the event(s) used. For example, if you use the entire inventory layer, please reference all the event citations contained within the layer. If you use just the events past a certain date, or another subset of the layer, please query those citations out and reference those. In addition, a CSV containing all citations can be found on the download page: https://maps.nccs.nasa.gov/arcgis/apps/MapAndAppGallery/index.html?appid=574f26408683485799d02e857e5d9521.  Methods We use 'landslide' as a general term to represent all event types. The catalog differentiates between landslide types when the information is available in the ls_type field.  Manually digitized landslides (method = Manual): These are hand-digitized landslide points or polygons, created by NASA scientists or contributed by other institutions. They are created on a case-by-case basis, depending on time and resources, or if there is an event where a partner requests it. The ability to hand-digitize depends on the availability of high-resolution cloud-free imagery, ideally before and after the event. Depending on the event size, location, and the satellite overpass, imagery from multiple dates may be used. For points, the scientist tries to identify where the initiation zone of each landslide is using an elevation layer. For polygons, the initiation zone is not differentiated. Automatically digitized landslides (method = Automatic): The open-source Semi-Automatic Landslide Detection (SaLaD) system was created to rapidly map landslides. SALaD uses object-based image analysis and machine learning to detect landslides from optical imagery. To successfully detect landslides, cloud-free imagery from before and after an event is needed, in addition to training data from that region or a region nearby. The raw polygon output of this system can be useful for situational awareness, but it will require manual corrections to weed out false positives for other use cases. Once that is done, initiation points can be created using a DEM.  For Further Reference Landslides.nasa.gov  Amatya, P., Kirschbaum, D., Stanley, T., and Tanyas, H. (2021). Landslide mapping using object-based image analysis and open source tools. Engineering Geology. 282. doi: 10.1016/j.enggeo.2021.106000. Amatya, P., Kirschbaum, D., and Stanley, T. (2021). Rainfall-induced landslide inventories for Lower Mekong based on Planet imagery and a semi-automatic mapping method. Geoscience Data Journal. doi: 10.1002/gdj3.145. Juang CS, Stanley TA, and Kirschbaum DB (2019) Using citizen science to expand the  global map of landslides: Introducing the Cooperative Open Online Landslide Repository  (COOLR). PLOS ONE. 14(7): e0218657. doi: 1371/journal.pone.0218657. Kirschbaum, D.B., Stanley, T., &amp; Zhou, Y. (2015). Spatial and temporal analysis of a global landslide catalog. Geomorphology, 249, 4-15. doi:10.1016/j.geomorph.2015.03.016 Kirschbaum, D.B., Adler, R., Hong, Y., Hill, S., &amp; Lerner-Lam, A. (2010). A global landslide catalog for hazard applications: method, results, and limitations. Natural Hazards, 52, 561-575. doi:10.1007/s11069-009-9401-4 ",
+      "editing_info": null,
+      "fields": [
+        {
+          "alias": "OBJECTID",
+          "length": null,
+          "name": "objectid",
+          "type": "esriFieldTypeOID"
+        },
+        {
+          "alias": "Name of Information Source",
+          "length": 255,
+          "name": "source_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Information Source",
+          "length": 2000,
+          "name": "source_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event ID",
+          "length": null,
+          "name": "event_id",
+          "type": "esriFieldTypeInteger"
+        },
+        {
+          "alias": "Event Date",
+          "length": 8,
+          "name": "event_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "Event Time (approximate)",
+          "length": 10,
+          "name": "event_time",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Title",
+          "length": 150,
+          "name": "event_title",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Description",
+          "length": 1000,
+          "name": "event_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Description",
+          "length": 500,
+          "name": "location_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Category",
+          "length": 50,
+          "name": "landslide_category",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Trigger",
+          "length": 50,
+          "name": "landslide_trigger",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Associated Storm Name",
+          "length": 150,
+          "name": "storm_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Comments",
+          "length": 500,
+          "name": "comments",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Method",
+          "length": 25,
+          "name": "method",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imagery Type for Digitizing",
+          "length": 100,
+          "name": "image_type",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Satellite Imagery Date Before Event",
+          "length": 500,
+          "name": "sat_date_before",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Satellite Imagery Date After Event",
+          "length": 500,
+          "name": "sat_date_after",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Name",
+          "length": 50,
+          "name": "country_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Code",
+          "length": 2,
+          "name": "country_code",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Citation",
+          "length": 1000,
+          "name": "citation",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Latitude",
+          "length": null,
+          "name": "latitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Longitude",
+          "length": null,
+          "name": "longitude",
+          "type": "esriFieldTypeDouble"
+        }
+      ],
+      "geometry_type": "esriGeometryPoint",
+      "max_record_count": 2000,
+      "name": "events_points",
+      "spatial_reference": {
+        "falseM": -100000,
+        "falseX": -400,
+        "falseY": -400,
+        "falseZ": -100000,
+        "latestWkid": 4326,
+        "mTolerance": 0.001,
+        "mUnits": 10000,
+        "wkid": 4326,
+        "xyTolerance": 8.983152841195215e-09,
+        "xyUnits": 999999999.9999999,
+        "zTolerance": 0.001,
+        "zUnits": 10000
+      },
+      "url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Events_Points/FeatureServer/0"
+    },
+    "events_polygons": {
+      "copyright": "NASA Goddard Space Flight Center, landslides.nasa.gov",
+      "count_at_audit": 22421,
+      "description": "The Cooperative Open Online Landslide Repository (COOLR) contains citizen science data from Landslide Reporter Catalog (LRC), data from NASA’s Global Landslide Catalog (GLC), NASA manually or automatically digitized landslides, and other inventories contributed by the research community. These are sorted into two main layers, \"coolr_reports\" and \"coolr_events\". The layers are further differentiated into a point or polygon layer, named accordingly. Within these layers, the user can further query out the manual or automated landslide inventories, events of a certain date, event triggers, and more. Each feature has a “title” in the attribute table with the digitization method, location, and event date (written as YYYY-MM-DD). The citation for each event inventory is located within the attribute table field “citation”. See the methods section for further detail about manual vs automatic landslide detection. For more information about the fields, see the How-to-Guide documentation under the “Trainings” tab at https://landslides.nasa.gov and the publications below.  The citation for each event inventory is located within the attribute table field “citation”. If you utilize this inventory, please reference each citation of the event(s) used. For example, if you use the entire inventory layer, please reference all the event citations contained within the layer. If you use just the events past a certain date, or another subset of the layer, please query those citations out and reference those. In addition, a CSV containing all citations can be found on the download page: https://maps.nccs.nasa.gov/arcgis/apps/MapAndAppGallery/index.html?appid=574f26408683485799d02e857e5d9521.  Methods We use 'landslide' as a general term to represent all event types. The catalog differentiates between landslide types when the information is available in the ls_type field.  Manually digitized landslides (method = Manual): These are hand-digitized landslide points or polygons, created by NASA scientists or other institutions. They are created on a case-by-case basis, depending on time and resources, or if there is an event where a partner requests it. The ability to hand-digitize depends on the availability of high-resolution cloud-free imagery, ideally before and after the event. Depending on the event size, location, and the satellite overpass, imagery from multiple dates may be used. For points, the scientist tries to identify where the initiation zone of each landslide is using an elevation layer. For polygons, the initiation zone is not differentiated. Automatically digitized landslides (method = Automatic): The open-source Semi-Automatic Landslide Detection (SaLaD) system was created to rapidly map landslides. SALaD uses object-based image analysis and machine learning to detect landslides from optical imagery. To successfully detect landslides, cloud-free imagery from before and after an event is needed, in addition to training data from that region or a region nearby. The raw polygon output of this system can be useful for situational awareness, but it will require manual corrections to weed out false positives for other use cases. Once that is done, initiation points can be created using a DEM.  For Further Reference Landslides.nasa.gov  Amatya, P., Kirschbaum, D., Stanley, T., and Tanyas, H. (2021). Landslide mapping using object-based image analysis and open source tools. Engineering Geology. 282. doi: 10.1016/j.enggeo.2021.106000. Amatya, P., Kirschbaum, D., and Stanley, T. (2021). Rainfall-induced landslide inventories for Lower Mekong based on Planet imagery and a semi-automatic mapping method. Geoscience Data Journal. doi: 10.1002/gdj3.145. Juang CS, Stanley TA, and Kirschbaum DB (2019) Using citizen science to expand the  global map of landslides: Introducing the Cooperative Open Online Landslide Repository  (COOLR). PLOS ONE. 14(7): e0218657. doi: 1371/journal.pone.0218657. Kirschbaum, D.B., Stanley, T., &amp; Zhou, Y. (2015). Spatial and temporal analysis of a global landslide catalog. Geomorphology, 249, 4-15. doi:10.1016/j.geomorph.2015.03.016 Kirschbaum, D.B., Adler, R., Hong, Y., Hill, S., &amp; Lerner-Lam, A. (2010). A global landslide catalog for hazard applications: method, results, and limitations. Natural Hazards, 52, 561-575. doi:10.1007/s11069-009-9401-4 ",
+      "editing_info": null,
+      "fields": [
+        {
+          "alias": "OBJECTID",
+          "length": null,
+          "name": "objectid",
+          "type": "esriFieldTypeOID"
+        },
+        {
+          "alias": "Name of Information Source",
+          "length": 255,
+          "name": "source_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Information Source",
+          "length": 2000,
+          "name": "source_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event ID",
+          "length": null,
+          "name": "event_id",
+          "type": "esriFieldTypeInteger"
+        },
+        {
+          "alias": "Event Date",
+          "length": 8,
+          "name": "event_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "Event Time (approximate)",
+          "length": 10,
+          "name": "event_time",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Title",
+          "length": 150,
+          "name": "event_title",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Description",
+          "length": 1000,
+          "name": "event_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Description",
+          "length": 500,
+          "name": "location_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Category",
+          "length": 50,
+          "name": "landslide_category",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Trigger",
+          "length": 50,
+          "name": "landslide_trigger",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Associated Storm Name",
+          "length": 150,
+          "name": "storm_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Comments",
+          "length": 500,
+          "name": "comments",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Method",
+          "length": 25,
+          "name": "method",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imagery Type for Digitizing",
+          "length": 100,
+          "name": "image_type",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Satellite Imagery Date Before Event",
+          "length": 500,
+          "name": "sat_date_before",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Satellite Imagery Date After Event",
+          "length": 500,
+          "name": "sat_date_after",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Name",
+          "length": 50,
+          "name": "country_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Code",
+          "length": 2,
+          "name": "country_code",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Citation",
+          "length": 1000,
+          "name": "citation",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Latitude",
+          "length": null,
+          "name": "latitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Longitude",
+          "length": null,
+          "name": "longitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "st_area(shape)",
+          "length": null,
+          "name": "Shape__Area",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "st_perimeter(shape)",
+          "length": null,
+          "name": "Shape__Length",
+          "type": "esriFieldTypeDouble"
+        }
+      ],
+      "geometry_type": "esriGeometryPolygon",
+      "max_record_count": 2000,
+      "name": "events_polygons",
+      "spatial_reference": {
+        "falseM": -100000,
+        "falseX": -400,
+        "falseY": -400,
+        "falseZ": -100000,
+        "latestWkid": 4326,
+        "mTolerance": 0.001,
+        "mUnits": 10000,
+        "wkid": 4326,
+        "xyTolerance": 8.983152841195215e-09,
+        "xyUnits": 999999999.9999999,
+        "zTolerance": 0.001,
+        "zUnits": 10000
+      },
+      "url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Events_Polygons/FeatureServer/0"
+    },
+    "reports_points": {
+      "copyright": "NASA Goddard Space Flight Center, landslides.nasa.gov",
+      "count_at_audit": 14750,
+      "description": "The Cooperative Open Online Landslide Repository (COOLR) contains citizen science data from Landslide Reporter put into the database as Landslide Reporter Catalog (event_import_source = ‘LRC’) and data from NASA’s Global Landslide Catalog (event_import_source = ‘GLC’) compiled since 2007. For more information about the fields, see the How-to Guide documentation under the “Trainings” tab at https://landslides.nasa.gov and the publications below.BackgroundThe Global Landslide Catalog (GLC) was developed with the goal of identifying rainfall-triggered landslide events around the world, regardless of size, impacts or location. The GLC considers all types of mass movements triggered by rainfall and some triggered by other events, that have been reported in the media, disaster databases, scientific reports, or other sources. The GLC has been compiled since 2007 at NASA Goddard Space Flight Center.The Cooperative Open Online Landslide Repository (COOLR) is a worldwide database of landslide events. It currently includes NASA’s Global Landslide Catalog (GLC) and other landslide reports contributed by citizen scientists. In the future, other landslide inventories will be added to COOLR.MethodsWe use 'landslide' as a general term to represent all event types. The catalog differentiates between landslide types when the information is available in the landslide_category field. COOLR follows a similar methodology to the GLC, and its fields and other information are documented in the publications below. Landslide events in the GLC were obtained from online news media, links to reported landslides in newspapers, hazard databases, scientific reports, blog entries, and personal communication and other sources. Online news articles serve as the primary sources of information for the landslide catalog and are found using Google Alerts (www.google.com/alerts) and other search engine options. Citizen science points submitted to COOLR through Landslide Reporter are checked for accuracy compared to the source material, accuracy of location and landslide identification, and the quality of the description provided. The source of the information in all COOLR points and polygons are described in the individual objects, which can be found in the source_name and source_link columns.For Further Referencelandslides.nasa.govKirschbaum, D.B., Stanley, T., &amp; Zhou, Y. (2015). Spatial and temporal analysis of a global landslide catalog. Geomorphology, 249, 4-15. doi:10.1016/j.geomorph.2015.03.016Kirschbaum, D.B., Adler, R., Hong, Y., Hill, S., &amp; Lerner-Lam, A. (2010). A global landslide catalog for hazard applications: method, results, and limitations. Natural Hazards, 52, 561-575. doi:10.1007/s11069-009-9401-4",
+      "editing_info": null,
+      "fields": [
+        {
+          "alias": "OBJECTID",
+          "length": null,
+          "name": "objectid",
+          "type": "esriFieldTypeOID"
+        },
+        {
+          "alias": "Name of Information Source",
+          "length": 255,
+          "name": "source_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Information Source",
+          "length": 2000,
+          "name": "source_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event ID",
+          "length": null,
+          "name": "event_id",
+          "type": "esriFieldTypeInteger"
+        },
+        {
+          "alias": "Event Date",
+          "length": 8,
+          "name": "event_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "Event Time (approximate)",
+          "length": 10,
+          "name": "event_time",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Title",
+          "length": 150,
+          "name": "event_title",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Description",
+          "length": 1000,
+          "name": "event_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Description",
+          "length": 500,
+          "name": "location_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Accuracy",
+          "length": 50,
+          "name": "location_accuracy",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Category",
+          "length": 50,
+          "name": "landslide_category",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Trigger",
+          "length": 50,
+          "name": "landslide_trigger",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Estimated Size",
+          "length": 50,
+          "name": "landslide_size",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Setting",
+          "length": 50,
+          "name": "landslide_setting",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Number of Fatalities",
+          "length": null,
+          "name": "fatality_count",
+          "type": "esriFieldTypeSmallInteger"
+        },
+        {
+          "alias": "Number of Injuries",
+          "length": null,
+          "name": "injury_count",
+          "type": "esriFieldTypeSmallInteger"
+        },
+        {
+          "alias": "Associated Storm Name",
+          "length": 150,
+          "name": "storm_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Photo",
+          "length": 2000,
+          "name": "photo_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Comments",
+          "length": 500,
+          "name": "comments",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imported Event Source Catalog",
+          "length": 150,
+          "name": "event_import_source",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imported Event Source Id",
+          "length": 20,
+          "name": "event_import_id",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Latitude",
+          "length": null,
+          "name": "latitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Longitude",
+          "length": null,
+          "name": "longitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Country Name",
+          "length": 50,
+          "name": "country_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Code",
+          "length": 2,
+          "name": "country_code",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Administrative Division",
+          "length": 44,
+          "name": "admin_division_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Closest Gazetteer Point",
+          "length": 50,
+          "name": "gazetteer_closest_point",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Distance to Gazetteer Point",
+          "length": null,
+          "name": "gazetteer_distance",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Submitted Date",
+          "length": 8,
+          "name": "submitted_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "last_edited_date",
+          "length": 8,
+          "name": "last_edited_date",
+          "type": "esriFieldTypeDate"
+        }
+      ],
+      "geometry_type": "esriGeometryPoint",
+      "max_record_count": 2000,
+      "name": "reports_points",
+      "spatial_reference": {
+        "falseM": -100000,
+        "falseX": -400,
+        "falseY": -400,
+        "falseZ": -100000,
+        "latestWkid": 4326,
+        "mTolerance": 0.001,
+        "mUnits": 10000,
+        "wkid": 4326,
+        "xyTolerance": 8.983152841195215e-09,
+        "xyUnits": 999999999.9999999,
+        "zTolerance": 0.001,
+        "zUnits": 10000
+      },
+      "url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0"
+    },
+    "reports_polygons": {
+      "copyright": "NASA Goddard Space Flight Center, landslides.nasa.gov",
+      "count_at_audit": 48,
+      "description": "The Cooperative Open Online Landslide Repository (COOLR) contains citizen science data from Landslide Reporter put into the database as Landslide Reporter Catalog (event_import_source = ‘LRC’) and data from NASA’s Global Landslide Catalog (event_import_source = ‘GLC’) compiled since 2007. For more information about the fields, see the How-to Guide documentation under the “Trainings” tab at https://landslides.nasa.gov and the publications below.BackgroundThe Global Landslide Catalog (GLC) was developed with the goal of identifying rainfall-triggered landslide events around the world, regardless of size, impacts or location. The GLC considers all types of mass movements triggered by rainfall and some triggered by other events, that have been reported in the media, disaster databases, scientific reports, or other sources. The GLC has been compiled since 2007 at NASA Goddard Space Flight Center.The Cooperative Open Online Landslide Repository (COOLR) is a worldwide database of landslide events. It currently includes NASA’s Global Landslide Catalog (GLC) and other landslide reports contributed by citizen scientists. In the future, other landslide inventories will be added to COOLR.MethodsWe use 'landslide' as a general term to represent all event types. The catalog differentiates between landslide types when the information is available in the landslide_category field. COOLR follows a similar methodology to the GLC, and its fields and other information are documented in the publications below. Landslide events in the GLC were obtained from online news media, links to reported landslides in newspapers, hazard databases, scientific reports, blog entries, and personal communication and other sources. Online news articles serve as the primary sources of information for the landslide catalog and are found using Google Alerts (www.google.com/alerts) and other search engine options. Citizen science points submitted to COOLR through Landslide Reporter are checked for accuracy compared to the source material, accuracy of location and landslide identification, and the quality of the description provided. The source of the information in all COOLR points and polygons are described in the individual objects, which can be found in the source_name and source_link columns.For Further Referencelandslides.nasa.gov.Kirschbaum, D.B., Stanley, T., &amp; Zhou, Y. (2015). Spatial and temporal analysis of a global landslide catalog. Geomorphology, 249, 4-15. doi:10.1016/j.geomorph.2015.03.016Kirschbaum, D.B., Adler, R., Hong, Y., Hill, S., &amp; Lerner-Lam, A. (2010). A global landslide catalog for hazard applications: method, results, and limitations. Natural Hazards, 52, 561-575. doi:10.1007/s11069-009-9401-4",
+      "editing_info": null,
+      "fields": [
+        {
+          "alias": "OBJECTID",
+          "length": null,
+          "name": "objectid",
+          "type": "esriFieldTypeOID"
+        },
+        {
+          "alias": "Name of Information Source",
+          "length": 255,
+          "name": "source_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Information Source",
+          "length": 2000,
+          "name": "source_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event ID",
+          "length": null,
+          "name": "event_id",
+          "type": "esriFieldTypeInteger"
+        },
+        {
+          "alias": "Event Date",
+          "length": 8,
+          "name": "event_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "Event Time (approximate)",
+          "length": 10,
+          "name": "event_time",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Title",
+          "length": 150,
+          "name": "event_title",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Description",
+          "length": 1000,
+          "name": "event_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Description",
+          "length": 500,
+          "name": "location_description",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Location Accuracy",
+          "length": 50,
+          "name": "location_accuracy",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Category",
+          "length": 50,
+          "name": "landslide_category",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Trigger",
+          "length": 50,
+          "name": "landslide_trigger",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Estimated Size",
+          "length": 50,
+          "name": "landslide_size",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Landslide Setting",
+          "length": 50,
+          "name": "landslide_setting",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Number of Fatalities",
+          "length": null,
+          "name": "fatality_count",
+          "type": "esriFieldTypeSmallInteger"
+        },
+        {
+          "alias": "Number of Injuries",
+          "length": null,
+          "name": "injury_count",
+          "type": "esriFieldTypeSmallInteger"
+        },
+        {
+          "alias": "Associated Storm Name",
+          "length": 150,
+          "name": "storm_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Link to Photo",
+          "length": 2000,
+          "name": "photo_link",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Event Comments",
+          "length": 500,
+          "name": "comments",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imported Event Source Catalog",
+          "length": 150,
+          "name": "event_import_source",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Imported Event Source Id",
+          "length": 20,
+          "name": "event_import_id",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Latitude",
+          "length": null,
+          "name": "latitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Longitude",
+          "length": null,
+          "name": "longitude",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Country Name",
+          "length": 50,
+          "name": "country_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Country Code",
+          "length": 2,
+          "name": "country_code",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Administrative Division",
+          "length": 44,
+          "name": "admin_division_name",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Closest Gazetteer Point",
+          "length": 50,
+          "name": "gazetteer_closest_point",
+          "type": "esriFieldTypeString"
+        },
+        {
+          "alias": "Distance to Gazetteer Point",
+          "length": null,
+          "name": "gazetteer_distance",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "Submitted Date",
+          "length": 8,
+          "name": "submitted_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "last_edited_date",
+          "length": 8,
+          "name": "last_edited_date",
+          "type": "esriFieldTypeDate"
+        },
+        {
+          "alias": "st_area(shape)",
+          "length": null,
+          "name": "Shape__Area",
+          "type": "esriFieldTypeDouble"
+        },
+        {
+          "alias": "st_perimeter(shape)",
+          "length": null,
+          "name": "Shape__Length",
+          "type": "esriFieldTypeDouble"
+        }
+      ],
+      "geometry_type": "esriGeometryPolygon",
+      "max_record_count": 2000,
+      "name": "reports_polygons",
+      "spatial_reference": {
+        "falseM": -100000,
+        "falseX": -400,
+        "falseY": -400,
+        "falseZ": -100000,
+        "latestWkid": 4326,
+        "mTolerance": 0.001,
+        "mUnits": 10000,
+        "wkid": 4326,
+        "xyTolerance": 8.983152841195215e-09,
+        "xyUnits": 999999999.9999999,
+        "zTolerance": 0.001,
+        "zUnits": 10000
+      },
+      "url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Polygons/FeatureServer/0"
+    }
+  },
+  "snapshot": {
+    "duplicate_or_missing_event_ids": 0,
+    "integration_decision": "not_integrated_pending_event-level_duplicate_review",
+    "overlap_with_local_glc_by_event_id": 11030,
+    "overlap_with_local_glc_by_event_import_id": 9460,
+    "pages": [
+      {
+        "bytes": 2616521,
+        "file": "page-0001.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=0&resultRecordCount=2000&f=json",
+        "sha256": "560695f0ba1bab9561515a8608367a0fddc16fee751490c5f196591876ae6539"
+      },
+      {
+        "bytes": 2609204,
+        "file": "page-0002.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=2000&resultRecordCount=2000&f=json",
+        "sha256": "7e6581354db8748d44564a8e56d38fad77936859173b895df2fd40d52dbdaaa6"
+      },
+      {
+        "bytes": 2604947,
+        "file": "page-0003.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=4000&resultRecordCount=2000&f=json",
+        "sha256": "7bfbf8c464e6c45ee99630969c905c7c572515e8828ad5636c2fbf9e2e2aef4f"
+      },
+      {
+        "bytes": 2600951,
+        "file": "page-0004.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=6000&resultRecordCount=2000&f=json",
+        "sha256": "592ed03556f446817ded34d1ec3200f55944da0e58f41650e6b20f235231c5b8"
+      },
+      {
+        "bytes": 2593738,
+        "file": "page-0005.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=8000&resultRecordCount=2000&f=json",
+        "sha256": "5385e45852f94d20126f23b483817686096538d883ebdc48003fb4f3a4a046eb"
+      },
+      {
+        "bytes": 2615819,
+        "file": "page-0006.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=10000&resultRecordCount=2000&f=json",
+        "sha256": "180c2aff5d0935c3109e91d989fe6327399b1fba598a870f7f2dad1cf98d511b"
+      },
+      {
+        "bytes": 2596098,
+        "file": "page-0007.json",
+        "records": 2000,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=12000&resultRecordCount=2000&f=json",
+        "sha256": "8cdbabf4494efed1de010ba79d738c50a84e1e5e0a8260c540805d52b9460476"
+      },
+      {
+        "bytes": 967467,
+        "file": "page-0008.json",
+        "records": 750,
+        "request_url": "https://gis.earthdata.nasa.gov/portal/rest/services/Landslides/COOLR_Reports_Points/FeatureServer/0/query?where=1%3D1&outFields=%2A&returnGeometry=true&outSR=4326&orderByFields=objectid+ASC&resultOffset=14000&resultRecordCount=2000&f=json",
+        "sha256": "d6cb7d7eef1169e2e8faf6daedf906ec059c21b9dc95f041694cdf2e9bc0c151"
+      }
+    ],
+    "records": 14750,
+    "unique_event_ids": 14750
+  }
+}

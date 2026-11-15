@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "obtained_at": "2026-11-15",
+  "source_project": "Natural Earth, distribuído como TopoJSON pelo pacote world-atlas",
+  "source_page": "https://www.naturalearthdata.com/downloads/50m-physical-vectors/",
+  "download_url": "https://cdn.jsdelivr.net/npm/world-atlas@2/land-50m.json",
+  "package_version_range": "world-atlas@2",
+  "natural_earth_layer": "1:50m land; a página oficial identifica a camada como versão 4.0.0",
+  "license": "Natural Earth public domain; verificar também os metadados do distribuidor world-atlas",
+  "file": "land-50m.json",
+  "bytes": 545534,
+  "sha256": "619477ff690c086885e45cb91707d783805561bd75ae8e437b7d4694b0204e0f",
+  "purpose": "definir grade terrestre independente dos registros, incluindo ilhas ausentes na fonte 1:110m"
+}

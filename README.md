@@ -1,79 +1,97 @@
 # Data Detectives
 
-Tendências e previsão de deslizamentos de terra com dados da NASA, para o desafio
-**Earth System Trend Detective** (NASA Space Apps 2026).
+Aplicação web estática para explorar registros de deslizamentos, séries meteorológicas da NASA POWER, ENSO e dois modelos experimentais, criada para o desafio **Earth System Trend Detective**.
 
-## Rodar
+O projeto é uma ferramenta de estudo. Não é alerta oficial e não estima risco no sentido técnico: exposição, vulnerabilidade e dano esperado não são modelados. A ausência de registro ou de cobertura do modelo não significa ausência de deslizamento nem risco baixo.
 
-O app é estático, mas precisa de um servidor local (os dados são carregados com `fetch`):
+## Rodar localmente
 
 ```bash
-python3 -m http.server 8000
+python3 server.py
 ```
 
-Abra http://localhost:8000. As APIs são chamadas direto do navegador, sem chave:
+Abra `http://localhost:8000` (outra porta: `DD_PORT=8001 python3 server.py`). É necessário um servidor HTTP porque os artefatos em `data/` são carregados com `fetch`.
 
-| API | Uso |
-|---|---|
-| NASA POWER (`power.larc.nasa.gov`) | chuva, umidade do solo e temperatura diárias (MERRA-2), 1981–hoje |
-| Open-Meteo Geocoding | busca de lugares |
-| Open-Meteo Elevation (Copernicus DEM 90 m) | altitude e declividade |
-| OpenStreetMap Nominatim | nome do ponto clicado no globo |
+Use **só** o `server.py`; ele substitui o `python3 -m http.server`. Com `http.server`, as rotas `/api/telegram/*` não existem e o botão do Telegram fica desativado. O `server.py` entrega apenas os arquivos do site (`index.html`, `app.js`, `i18n.js`, `style.css`, `assets/` e os JSONs de `data/`), com o caminho já decodificado. `.env`, `.git`, `.venv`, `scripts/`, `tests/`, `docs/` e `data/runs/` respondem 404.
 
-O índice do El Niño (ONI, NOAA CPC) não pode ser lido direto pelo navegador, então fica em
-`data/enso.json`. Para atualizar: `python scripts/fetch_enso.py data/enso.json`.
+O servidor entrega os arquivos estáticos e expõe uma ponte opcional para Telegram. O navegador:
 
-A NASA POWER limita pedidos em sequência rápida. O app faz uma chamada por vez e tenta de novo
-automaticamente.
+- carrega `data/catalog.json`, `data/models.json`, `data/enso.json`, `data/gibs.json` e `data/coolr-status.json`;
+- chama NASA POWER, NASA GIBS, Open-Meteo e Nominatim;
+- calcula tendências, composições ENSO e inferência do modelo de disparo;
+- renderiza o globo, gráficos e comparações.
 
-## O que é calculado no navegador
+Coleta para treino e treinamento são scripts offline e não rodam durante requisições dos usuários.
 
-- **Gatilho agora**: modelo de disparo (gradient boosting) aplicado aos dados mais recentes da NASA POWER.
-- **Tendências**: Rx5day, dias de disparo, chuva anual, umidade da zona de raiz e temperatura, 1981 até o
-  último ano completo. Reta de mínimos quadrados com IC de 95%, inclinação de Sen e teste de Mann-Kendall.
-- **Risco estrutural**: modelo treinado no Global Landslide Catalog, por célula de 1° e mês.
-- **Declividade**: a partir de 5 pontos de altitude a ~280 m de distância.
+### Telegram sem token no navegador
 
-## El Niño e La Niña
-
-- Fases pela regra da NOAA: pelo menos 5 estações seguidas com ONI ≥ +0,5 °C (El Niño) ou ≤ −0,5 °C (La Niña).
-- Para cada lugar: anomalia mensal de chuva e dias de disparo por fase (teste t de Welch contra neutro) e
-  correlação ONI × chuva com defasagem de 0 a 6 meses (tamanho efetivo de amostra de Bretherton et al., 1999).
-- No globo: eventos do catálogo por fase e região, normalizados pela média de cada ano.
-
-## Modelos
-
-### Modelo de disparo (`scripts/train_trigger.py`)
-- Casos: 5.361 dias com deslizamento registrado (gatilhos meteorológicos) em 922 células da NASA POWER.
-- Controles: 4 dias comuns por caso, no mesmo lugar, a mais de 10 dias de qualquer evento.
-- 16 variáveis de chuva e umidade do solo, quase todas em percentil do clima local (2001–2017).
-- Validação espacial (GroupKFold por lugar): AUC 0,858. Só o percentil da chuva de 7 dias: 0,827.
-- Validação no tempo (treino até 2014, teste 2015–2017): AUC 0,836.
-- As faixas Elevado, Alto e Muito alto são os percentis 90, 97 e 99 do índice em dias comuns.
-- As árvores são exportadas para JSON e avaliadas em `app.js`, com diferença zero para o scikit-learn.
-
-### Modelo estrutural (`scripts/train_structural.py`)
-- Unidade: célula de 1° × mês. Alvo: pelo menos um registro nos 2 anos seguintes.
-- Treino 2007–2012 → 2013–14. Teste 2009–2014 → 2015–16: AUC 0,89 (linha de base 0,86).
-
-## Refazer os dados
+O envio fica desativado sem configuração. Defina os valores apenas no ambiente do processo — nunca em `app.js`, HTML ou arquivo versionado:
 
 ```bash
-python scripts/build_catalog.py Global_Landslide_Catalog_Export_rows.csv countries-110m.json data/catalog.json
+export TELEGRAM_ALERTS_ENABLED=1
+export TELEGRAM_BOT_TOKEN='TOKEN_CONFIGURADO_NO_SERVIDOR'
+export TELEGRAM_CHAT_ID='DESTINATARIO_CONFIGURADO_NO_SERVIDOR'
+python3 server.py
+```
+
+O cliente envia somente local, coordenada já arredondada para duas casas, score, faixa e data. O backend fixa o destinatário, rejeita texto livre, limita o corpo e aceita no máximo três pedidos por IP a cada dez minutos. `config/telegram.env.example` contém apenas nomes e valores fictícios. Um token compartilhado em navegador, conversa ou log deve ser tratado como exposto e substituído no BotFather.
+
+Para localizar automaticamente o ID de um grupo já acessível pelo bot `@data_dectives_bot`, adicione o bot ao grupo, envie `/start@data_dectives_bot` dentro dele e execute:
+
+```bash
+python3 scripts/configure_telegram.py --group "Data Dectives"
+```
+
+O token é solicitado sem eco e a configuração é gravada em `.env` com permissão `0600`; o arquivo é ignorado pelo Git e carregado por `server.py`.
+
+## Como interpretar os modelos
+
+- **Modelo de disparo:** gera um score de semelhança entre condições meteorológicas regionais recentes e condições de dias com deslizamento registrado. O score não é probabilidade calibrada.
+- **Modelo chamado estrutural na interface:** usa principalmente histórico do catálogo para estimar recorrência de registros por célula/mês. O artefato publicado foi gerado com atributos até 2017 e não representa uma condição atual. Ele não é um modelo físico de suscetibilidade nem uma estimativa de risco.
+
+Veja limitações, métricas e períodos em [docs/modelos.md](docs/modelos.md).
+
+## Documentação auditada
+
+- [Visão geral](docs/visao-geral.md)
+- [Arquitetura e fluxo de dados](docs/arquitetura.md)
+- [Fontes e rastreabilidade](docs/fontes-de-dados.md)
+- [Auditoria das bases e integrações](docs/auditoria-dados.md)
+- [Preparação segura dos dados](docs/preparacao-dados.md)
+- [Modelos](docs/modelos.md)
+- [Operação](docs/operacao.md)
+- [Plano de tarefas](docs/plano-de-tarefas.md)
+
+A documentação diferencia fatos verificados, inferências e itens não verificados. O plano prioriza rótulos potencialmente enganosos, procedência, integração sem dupla contagem e testes.
+
+## Refazer artefatos — fluxo atual
+
+O pipeline antigo de treino requer `numpy`, `scikit-learn` e intermediários que não estão no repositório. Não execute treino antes de concluir o plano. O catálogo v2 pode ser reproduzido por:
+
+```bash
+python3 scripts/build_catalog.py data/sources/glc/2026-11-15/Global_Landslide_Catalog_Export_rows.csv data/catalog.json /tmp/catalog-v2.json --manifest data/sources/glc/2026-11-15/manifest.json
+```
+
+Os comandos históricos, que não garantem reprodução bit a bit do modelo atual, são:
+
+```bash
 python scripts/prepare_events.py Global_Landslide_Catalog_Export_rows.csv train_events.json
-python scripts/fetch_power.py train_events.json power/          # lento: respeite o limite da API
+python scripts/fetch_power.py train_events.json power/
 python scripts/train_trigger.py train_events.json power/ trigger.json
 python scripts/train_structural.py Global_Landslide_Catalog_Export_rows.csv structural.json
 python scripts/build_models.py structural.json trigger.json data/models.json
+python scripts/fetch_enso.py data/enso.json
 ```
 
-Requer `numpy` e `scikit-learn` para o treino.
+Gere candidatos fora de `data/` e só substitua artefatos publicados após validação e revisão. O processo recomendado de promoção e reversão está em [docs/operacao.md](docs/operacao.md#treino-atualização-e-promoção-segura).
 
-Fontes: CSV do catálogo em data.nasa.gov ("Global Landslide Catalog Export"); contornos em
-`world-atlas@2.0.2/countries-110m.json`.
+## Estado conhecido
 
-## Limites
+- `data/catalog.json` schema v3 contém 14.753 IDs únicos: 11.030 versões COOLR substituem IDs coincidentes, 3.720 IDs existem apenas no snapshot COOLR e três somente no GLC local. As datas presentes vão de 1915 a 2025; 1.637 registros não têm data e 27 não têm coordenada válida.
+- `data/enso.json` registra ONI até ASO/2026 e data de download 14/11/2026. ONI recente é revisável, e a NOAA passou a usar RONI no monitoramento oficial em 2026.
+- `data/gibs.json` registra o `TIME`/fallback das quatro camadas no snapshot de 15/11/2026;
+- não há atualização agendada, CI/CD ou destino de publicação documentado;
+- o backend Telegram está implementado e permanece desativado enquanto as variáveis de ambiente não forem configuradas; token e destinatário nunca são entregues ao navegador;
+- os modelos publicados continuam treinados com dados até 2017. A atualização do catálogo afeta mapa e históricos locais, não retreina nem altera os modelos.
 
-- O catálogo depende de notícias, então tem viés de reporte (EUA: 2.992 eventos e 96 mortes; Índia: 1.265 e 7.069).
-- O pixel do MERRA-2 tem ~50 km. O índice mede condições regionais, não prevê o ponto exato.
-- Não é alerta oficial. Em risco real, siga a Defesa Civil.
+Consulte o [plano de tarefas](docs/plano-de-tarefas.md) antes de tratar o site como pronto para uso operacional.

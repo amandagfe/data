@@ -1,0 +1,37 @@
+{
+  "manifest_schema": "data-detectives-source-manifest/v1",
+  "dataset": "Global Landslide Catalog Export",
+  "component_scope": "Legacy GLC export; this is not a snapshot of the full COOLR",
+  "institution": "NASA Goddard Space Flight Center / NASA Open Data Portal",
+  "landing_page": "https://data.nasa.gov/dataset/global-landslide-catalog-export",
+  "resource_page": "https://data.nasa.gov/dataset/global-landslide-catalog-export/resource/7dc0d8c1-05f6-4c5c-8fee-20834e4d5d31",
+  "download_url": "https://data.nasa.gov/docs/legacy/Global_Landslide_Catalog_Export/Global_Landslide_Catalog_Export_rows.csv",
+  "resource_id": "7dc0d8c1-05f6-4c5c-8fee-20834e4d5d31",
+  "version": null,
+  "version_note": "The portal does not publish a semantic or revision version for this resource.",
+  "license": null,
+  "license_note": "The portal displays 'License not specified'. Citation and terms still apply.",
+  "downloaded_at_utc": "2026-11-15T10:33:01.295772Z",
+  "file": "Global_Landslide_Catalog_Export_rows.csv",
+  "media_type": "text/csv",
+  "bytes": 8479717,
+  "sha256": "2c4898899dd4f373c4320e121c5b655ebb5394d431fa42e57ec4828d07d48b04",
+  "records": 11033,
+  "fields": 31,
+  "event_period": {
+    "min": "1988-11-07",
+    "max": "2017-09-28",
+    "note": "Bounds are derived from records; they are not publication or update dates."
+  },
+  "portal_metadata": {
+    "description_current_as_of": "2016-03-07",
+    "metadata_last_updated_utc": "2025-05-29T21:08:00Z",
+    "data_last_updated": null
+  },
+  "immutability": {
+    "policy": "append-only source snapshot; never edit or replace this file in place",
+    "filesystem_mode_at_audit": "0444",
+    "verification_command": "sha256sum data/sources/glc/2026-11-15/Global_Landslide_Catalog_Export_rows.csv"
+  },
+  "known_divergence": "The served CSV contains records through 2017 although the portal description says the one-time export was current as of 2016-03-07."
+}

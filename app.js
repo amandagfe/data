@@ -4,7 +4,19 @@
 'use strict';
 const $ = s => document.querySelector(s);
 const store = {get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+const A11Y_DEFAULT={text:false,contrast:false,spacing:false,motion:false};
+let a11yPrefs={...A11Y_DEFAULT,...store.get('dd-a11y',A11Y_DEFAULT)};
+let reduced=motionMedia.matches||a11yPrefs.motion;
+function applyA11yClasses(){
+  const root=document.documentElement;
+  root.classList.toggle('a11y-large-text',a11yPrefs.text);
+  root.classList.toggle('a11y-high-contrast',a11yPrefs.contrast);
+  root.classList.toggle('a11y-spacing',a11yPrefs.spacing);
+  root.classList.toggle('a11y-reduce-motion',a11yPrefs.motion);
+  reduced=motionMedia.matches||a11yPrefs.motion;
+}
+applyA11yClasses();
 
 /* ================= idioma ================= */
 const LANGS=['pt','en','es'];
@@ -16,9 +28,10 @@ const sgn = (v,d) => { const r=+v.toFixed(d); return (r>0?'+':r<0?'−':'')+nf(M
 const dFmt = s => new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8))).toLocaleDateString(L.locale,{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'});
 const dShort = s => new Date(Date.UTC(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8))).toLocaleDateString(L.locale,{day:'2-digit',month:'2-digit',timeZone:'UTC'});
 const isoFmt = s => dFmt(s.replace(/-/g,''));
-const PT_HTML = new Map(), PT_PH = new Map();
+const PT_HTML = new Map(), PT_PH = new Map(), PT_ARIA = new Map();
 document.querySelectorAll('[data-i18n]').forEach(el=>PT_HTML.set(el, el.innerHTML));
 document.querySelectorAll('[data-i18n-ph]').forEach(el=>PT_PH.set(el, el.placeholder));
+document.querySelectorAll('[data-i18n-aria]').forEach(el=>PT_ARIA.set(el, el.getAttribute('aria-label')));
 function renderTex(root=document){
   if(!window.katex) return;
   root.querySelectorAll('.tex').forEach(el=>{ if(!el.querySelector('.katex')) try{ katex.render(el.textContent, el, {throwOnError:false}); }catch(e){} });
@@ -27,18 +40,29 @@ function applyStatic(){
   document.documentElement.lang = {pt:'pt-BR',en:'en',es:'es'}[lang];
   PT_HTML.forEach((pt,el)=>{ el.innerHTML = lang==='pt' ? pt : (I18N.html[lang][el.dataset.i18n] ?? pt); });
   PT_PH.forEach((pt,el)=>{ el.placeholder = lang==='pt' ? pt : (I18N.html[lang][el.dataset.i18nPh] ?? pt); });
+  PT_ARIA.forEach((pt,el)=>{ el.setAttribute('aria-label',lang==='pt' ? pt : (I18N.html[lang][el.dataset.i18nAria] ?? pt)); });
   document.querySelectorAll('.lang button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.lang===lang));
   renderTex();
 }
 
-const [CAT, MOD, ENSO] = await Promise.all(['catalog','models','enso'].map(n=>fetch(`data/${n}.json`).then(r=>r.json())));
+const [CAT, MOD, ENSO, GIBS_META, COOLR_STATUS] = await Promise.all(['catalog','models','enso','gibs','coolr-status'].map(n=>fetch(`data/${n}.json`).then(r=>r.json())));
 
 /* ================= catálogo ================= */
-const TRIG = CAT.trig;
-const PT = CAT.pts.map(p => ({lat:p[0], lng:p[1], year:p[2], month:p[3], fat:p[4], trig:TRIG[p[5]], cty:CAT.ctys[p[6]], day:p[7]||0}));
+const PT = CAT.schema_version>=2
+  ? CAT.events.filter(e=>Number.isFinite(e.latitude) && Number.isFinite(e.longitude)).map(e=>{
+      const [year,month,day]=e.event_date?e.event_date.split('-').map(Number):[0,0,0];
+      return {id:e.event_id, lat:e.latitude, lng:e.longitude, year, month, day,
+        fat:e.fatality_count??0, fatKnown:e.fatality_count!=null,
+        trig:(e.landslide_trigger||'unknown').trim().toLowerCase(), cty:e.country_name||'',
+        accuracy:e.location_accuracy, source:e.source};
+    })
+  : CAT.pts.map(p => ({lat:p[0], lng:p[1], year:p[2], month:p[3], fat:p[4], trig:CAT.trig[p[5]], cty:CAT.ctys[p[6]], day:p[7]||0}));
 const rainSet = ['downpour','rain','continuous_rain','monsoon','tropical_cyclone'];
-const total = PT.length, deaths = PT.reduce((s,p)=>s+p.fat,0), rainN = PT.filter(p=>rainSet.includes(p.trig)).length;
-const nCountries = CAT.ctys.filter(Boolean).length;
+const catalogEvents=CAT.events||[], catalogTotal=catalogEvents.length||PT.length;
+const catalogDeaths=catalogEvents.reduce((s,p)=>s+(p.fatality_count??0),0), catalogMissingDeaths=catalogEvents.filter(p=>p.fatality_count==null).length;
+const catalogRainN=catalogEvents.filter(p=>rainSet.includes((p.landslide_trigger||'unknown').trim().toLowerCase())).length;
+const total=PT.length, deaths=PT.reduce((s,p)=>s+p.fat,0), missingDeaths=PT.filter(p=>p.fatKnown===false).length, rainN=PT.filter(p=>rainSet.includes(p.trig)).length;
+const nCountries = new Set(PT.map(p=>p.cty).filter(Boolean)).size;
 const trigName = t => L.trig[t] || t.replace(/_/g,' ');
 
 /* ================= ENSO (NOAA ONI) ================= */
@@ -100,20 +124,23 @@ const quant = (s,q) => s[Math.floor(q*(s.length-1))];
 const pTxt = p => Number.isNaN(p)?'–':p<0.001?'p < '+nf(0.001,3):'p = '+nf(p,3);
 
 /* ================= modelos ================= */
-const G = MOD.grid, CELL = new Map();
-G.cells.forEach(r=>{ const pm=r.slice(2).map(v=>v/1000); const p2=1-pm.reduce((a,v)=>a*(1-v),1); CELL.set(r[0]+','+r[1], {lat:r[0]+.5, lng:r[1]+.5, pm, p2}); });
+const G = MOD.grid, GRID_V2=Number(G.schema_version||0)>=2, CELL = new Map();
+G.cells.forEach(r=>{ const pm=r.slice(2).map(v=>v/1000); const p2=GRID_V2?Math.max(...pm):1-pm.reduce((a,v)=>a*(1-v),1); CELL.set(r[0]+','+r[1], {lat:r[0]+.5, lng:r[1]+.5, pm, p2}); });
 const P2 = sortNum([...CELL.values()].map(c=>c.p2));
 const TH = {mod:quant(P2,.60), alto:quant(P2,.85), muito:quant(P2,.95)};
-const CLS = {muito:{key:'muito',c:'#f55d5d',t:'#fff'}, alto:{key:'alto',c:'#f58b5d',t:'#1a0d08'}, mod:{key:'mod',c:'#f2c38b',t:'#2a1a08'}, baixo:{key:'baixo',c:'#2f7a77',t:'#eaf6f4'}, nd:{key:'nd',c:'rgba(234,246,244,.12)',t:'#9fc2bf'},
+const CLS = {muito:{key:'muito',c:'#f55d5d',t:'#2a0808'}, alto:{key:'alto',c:'#f58b5d',t:'#1a0d08'}, mod:{key:'mod',c:'#f2c38b',t:'#2a1a08'}, baixo:{key:'baixo',c:'#2f7a77',t:'#eaf6f4'}, nd:{key:'nd',c:'rgba(234,246,244,.12)',t:'#9fc2bf'},
   elev:{key:'elev',c:'#f2c38b',t:'#2a1a08'}, normal:{key:'normal',c:'#2f7a77',t:'#eaf6f4'}};
 const clsName = cl => L.cls[cl.key];
 const structClass = p => p>=TH.muito?CLS.muito : p>=TH.alto?CLS.alto : p>=TH.mod?CLS.mod : CLS.baixo;
 function nearestCell(lat,lng){
-  const a=Math.floor(lat), b=Math.floor(lng); let best=CELL.get(a+','+b);
-  if(!best) for(let da=-1;da<=1;da++) for(let db=-1;db<=1;db++){const c=CELL.get((a+da)+','+(b+db)); if(c&&(!best||c.p2>best.p2)) best=c;}
-  return best;
+  // Não substitui ausência de cobertura pelo maior valor de uma célula vizinha:
+  // isso faria uma estimativa de outro local parecer pertencer ao ponto consultado.
+  return CELL.get(Math.floor(lat)+','+Math.floor(lng)) || null;
 }
 const TM = MOD.trig;
+const WEATHER_V2=Number(TM.schema_version||0)>=2;
+const WEATHER_V2_FEATURES=['rain_d_minus_1','rain_3d','rain_7d','rain_14d','rain_30d','rain_antecedent_30d_excluding_7d','percentile_rain_1d','percentile_rain_3d','percentile_rain_7d','percentile_rain_14d','surface_soil_wetness_d_minus_1','root_soil_wetness_d_minus_1','percentile_surface_soil_wetness','percentile_root_soil_wetness','reference_annual_rain','rain_7d_over_reference_p95'];
+if(WEATHER_V2&&JSON.stringify(TM.feat)!==JSON.stringify(WEATHER_V2_FEATURES)) throw new Error('Contrato de atributos do modelo meteorológico v2 incompatível.');
 function predictTrig(x){
   let raw = TM.base;
   for(const t of TM.trees){ let i=0; while(!t.leaf[i]){ const v=x[t.f[i]]; i = (Number.isNaN(v) ? t.ml[i] : v<=t.th[i]) ? t.l[i] : t.r[i]; } raw += t.v[i]; }
@@ -125,9 +152,9 @@ function badge(el, cl, label){ el.textContent=label||cl.k||clsName(cl); el.style
 
 /* ================= cabeçalho e resumo ================= */
 function renderHeroAbstract(){
-  $('#hero-stats').innerHTML = [[L.hs[0],fmt(total)],[L.hs[1],fmt(deaths)],[L.hs[2],Math.round(rainN/total*100)+'%'],[L.hs[3],`${sgn(lastOni,2)} °C`]]
+  $('#hero-stats').innerHTML = [[L.hs[0],fmt(catalogTotal)],[L.deathsLabel(catalogMissingDeaths),fmt(catalogDeaths)],[L.hs[2],Math.round(catalogRainN/catalogTotal*100)+'%'],[L.hs[3],`${sgn(lastOni,2)} °C`]]
     .map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
-  const o={rain:Math.round(rainN/total*100), total:fmt(total), auc1:nf(TM.metrics.auc,2), auc2:nf(G.metrics.auc,2), cur:curTxt(), oni:sgn(lastOni,2), seas:lastSeas,
+  const o={rain:Math.round(catalogRainN/catalogTotal*100), total:fmt(catalogTotal), auc1:nf(TM.metrics.auc,2), auc2:nf(G.metrics.auc,2), cur:curTxt(), oni:sgn(lastOni,2), seas:lastSeas,
     ctys:fmt(nCountries), cases:fmt(TM.metrics.cases), places:fmt(TM.metrics.places), base1:nf(TM.metrics.base_auc,2), base2:nf(G.metrics.base_auc,2)};
   $('#abs-p').innerHTML = L.abs(o);
   $('#abs-nums').innerHTML = L.absn(o).map(([a,b,c])=>`<div><dt>${b}</dt><dd>${a}<small>${c}</small></dd></div>`).join('');
@@ -163,16 +190,14 @@ const BASE_DOT='rgba(206,244,238,0.85)', DIM_DOT='rgba(206,244,238,0.22)';
 const TEX_BASE = paintTexture(()=>BASE_DOT);
 const baseCv=document.createElement('canvas'); baseCv.width=TW; baseCv.height=THt; baseCv.getContext('2d').drawImage(texCanvas,0,0);
 // camadas do NASA GIBS (as mesmas do Worldview), em projeção geográfica igual à textura do globo
-const GIBS={
-  rain:{id:'IMERG_Precipitation_Rate', overlay:true, legend:'https://gibs.earthdata.nasa.gov/legends/GPM_Precipitation_Rate_H.png'},
-  soil:{id:'SMAP_L4_Analyzed_Root_Zone_Soil_Moisture', overlay:true, legend:'https://gibs.earthdata.nasa.gov/legends/SMAP_Analyzed_Soil_Moisture_H.png'},
-  haz:{id:'NDH_Landslide_Hazard_Distribution_2000', overlay:true, legend:'https://gibs.earthdata.nasa.gov/legends/NDH_Landslide_Hazard_Distribution_2000_H.png'},
-  sat:{id:'VIIRS_NOAA20_CorrectedReflectance_TrueColor', overlay:false, legend:null, daysAgo:1}   // o dia corrente ainda está incompleto
-};
+const GIBS=GIBS_META.layers;
 const gibsCache=new Map();
 function gibsTexture(key){
   if(gibsCache.has(key)) return gibsCache.get(key);
-  const g=GIBS[key], url=`https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&LAYERS=${g.id}&CRS=EPSG:4326&BBOX=-90,-180,90,180&WIDTH=${TW}&HEIGHT=${THt}&FORMAT=${g.overlay?'image/png&TRANSPARENT=true':'image/jpeg'}${g.daysAgo?'&TIME='+new Date(Date.now()-g.daysAgo*864e5).toISOString().slice(0,10):''}`;
+  const g=GIBS[key], params=new URLSearchParams({SERVICE:'WMS',REQUEST:'GetMap',VERSION:'1.3.0',LAYERS:g.id,CRS:'EPSG:4326',BBOX:'-90,-180,90,180',WIDTH:TW,HEIGHT:THt,FORMAT:g.overlay?'image/png':'image/jpeg'});
+  if(g.overlay) params.set('TRANSPARENT','true');
+  if(g.requested_time) params.set('TIME',g.requested_time);
+  const url='https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi?'+params;
   const pr=new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin='anonymous';
     im.onload=()=>{ const cv=document.createElement('canvas'); cv.width=TW; cv.height=THt; const c=cv.getContext('2d');
       if(g.overlay){ c.drawImage(baseCv,0,0); c.globalAlpha=.92; } c.drawImage(im,0,0,TW,THt); res(cv.toDataURL('image/jpeg',.9)); };
@@ -196,15 +221,75 @@ const deadliest = [...PT].sort((a,b)=>b.fat-a.fat).slice(0,14);
 
 let layer='risk', horizon=0, riskTexFor=null;
 const riskVal = (c,h) => h===0 ? c.p2 : c.pm[h-1];
+function gibsTimeNote(key){
+  const g=GIBS[key];
+  return !g.temporal ? L.gibsStatic : g.fallback
+    ? L.gibsFallback(g.desired_time,g.requested_time,g.represented_time)
+    : L.gibsDate(g.requested_time,g.represented_time);
+}
+function layerSource(key){
+  const d=L.layerDetails[key];
+  if(key==='ev'){
+    const p=COOLR_STATUS.published_catalog, period=p.event_period||{};
+    return L.layerEventSource(fmt(p.records||catalogTotal),fmt(total),(period.min||'–').slice(0,10),(period.max||'–').slice(0,10));
+  }
+  if(GIBS[key]) return `${d.source} ${gibsTimeNote(key)}`;
+  return d.source;
+}
+function renderLayerGuide(){
+  const active=L.layerDetails[layer];
+  if(!active) return;
+  $('#globe').setAttribute('aria-label',`${L.globeLabel} ${L.layerActiveAria(active.title)}`);
+}
+// Pop-up explicativo ao passar o mouse (ou focar pelo teclado) nos botões de camada
+const layerTip=$('#layer-tip');
+let tipChip=null;
+function showLayerTip(chip){
+  const key=chip.dataset.l, d=L.layerDetails[key];
+  if(!d) return;
+  layerTip.innerHTML='';
+  const h=document.createElement('strong'); h.textContent=d.title;
+  const k=document.createElement('span'); k.className='layer-tip-kind'; k.textContent=d.kind;
+  const p=document.createElement('p'); p.textContent=d.desc;
+  const row=(label,text)=>{const el=document.createElement('p'); el.className='layer-tip-row'; const b=document.createElement('b'); b.textContent=label; el.append(b,document.createTextNode(text)); return el;};
+  layerTip.append(h,k,p,row(L.layerSourceLabel,layerSource(key)),row(L.layerLimitLabel,d.limit));
+  layerTip.hidden=false;
+  if(tipChip&&tipChip!==chip) tipChip.removeAttribute('aria-describedby');
+  tipChip=chip; chip.setAttribute('aria-describedby','layer-tip');
+  const r=chip.getBoundingClientRect(), box=(chip.closest('.chips')||chip).getBoundingClientRect();
+  const tw=layerTip.offsetWidth, th=layerTip.offsetHeight, m=12, vw=window.innerWidth, vh=window.innerHeight;
+  let left, top;
+  if(box.right+14+tw<=vw-m){ // à direita da coluna de botões, sem cobrir as outras camadas
+    left=box.right+14; top=Math.min(Math.max(m,r.top+r.height/2-th/2),vh-th-m);
+  } else { // telas estreitas: acima ou abaixo do botão
+    left=Math.min(Math.max(m,r.left+r.width/2-tw/2),vw-tw-m);
+    top=r.top-th-10; if(top<m) top=r.bottom+10;
+  }
+  layerTip.style.left=left+'px'; layerTip.style.top=top+'px';
+}
+function hideLayerTip(){
+  layerTip.hidden=true;
+  if(tipChip){ tipChip.removeAttribute('aria-describedby'); tipChip=null; }
+}
+document.querySelectorAll('#layer-chips .chip').forEach(chip=>{
+  chip.addEventListener('mouseenter',()=>showLayerTip(chip));
+  chip.addEventListener('mouseleave',hideLayerTip);
+  chip.addEventListener('focus',()=>showLayerTip(chip));
+  chip.addEventListener('blur',hideLayerTip);
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!layerTip.hidden) hideLayerTip(); });
+window.addEventListener('scroll',hideLayerTip,{passive:true});
 function drawLayer(){
+  renderLayerGuide();
   $('#risk-ctl').hidden = layer!=='risk';
   $('#gibs-ctl').hidden = !GIBS[layer];
   if(GIBS[layer]){
     const key=layer, g=GIBS[key]; riskTexFor=null;
     globe.pointsData([]);
-    $('#gibs-legend').hidden=!g.legend; if(g.legend) $('#gibs-legend').src=g.legend;
-    $('#gibs-note').textContent=L.gibs[key]; $('#pt-count').textContent=L.gibsLoading;
-    gibsTexture(key).then(tex=>{ if(layer!==key) return; globe.globeImageUrl(tex); $('#pt-count').textContent='NASA GIBS · '+g.id; })
+    $('#gibs-legend').hidden=!g.legend; if(g.legend){ $('#gibs-legend').src=g.legend; $('#gibs-legend').alt=L.gibsLegend(L.layerDetails[key].title); }
+    const timeNote=gibsTimeNote(key);
+    $('#gibs-note').textContent=L.gibs[key]+' '+timeNote; $('#pt-count').textContent=L.gibsLoading;
+    gibsTexture(key).then(tex=>{ if(layer!==key) return; globe.globeImageUrl(tex); $('#pt-count').textContent='NASA GIBS · '+g.id+(g.requested_time?' · TIME '+g.requested_time:''); })
       .catch(()=>{ if(layer===key) $('#pt-count').textContent=L.gibsErr; });
     return;
   }
@@ -220,6 +305,7 @@ function drawLayer(){
       <div class="ticks">${tk.map(v=>`<span>${nf(v*100,v<.1?1:0)}%</span>`).join('')}</div>
       <div class="ticks cap"><span>p0</span><span>p60</span><span>p85</span><span>p95</span><span>${L.cbMax}</span></div>
       <span class="cap">${L.cbCap(fmt(CELL.size))}</span>`;
+    $('#colorbar').setAttribute('role','img'); $('#colorbar').setAttribute('aria-label',L.colorbarAria);
     $('#pt-count').innerHTML = horizon===0 ? L.ch2y : L.chMonth(L.MESL[horizon-1]);
   } else {
     riskTexFor=null;
@@ -227,8 +313,14 @@ function drawLayer(){
     $('#pt-count').innerHTML = L.evCount(fmt(total), fmt(deaths));
   }
 }
-$('#layer-chips').addEventListener('click', e=>{const b=e.target.closest('.chip'); if(!b) return; layer=b.dataset.l;
-  document.querySelectorAll('#layer-chips .chip').forEach(x=>x.setAttribute('aria-pressed', x.dataset.l===layer)); drawLayer();});
+function setLayer(next){
+  if(!L.layerDetails[next]) return;
+  layer=next;
+  document.querySelectorAll('#layer-chips .chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.l===layer));
+  if(current&&!reduced) globe.ringsData([{lat:current.pl.lat,lng:current.pl.lng,sel:true,r:radius/111}].concat(layer==='risk'?[]:deadliest));
+  drawLayer();
+}
+$('#layer-chips').addEventListener('click', e=>{const b=e.target.closest('.chip'); if(b) setLayer(b.dataset.l);});
 let hzT; $('#risk-month').addEventListener('input', e=>{ horizon=+e.target.value; $('#risk-month-lbl').textContent = horizon===0?L.twoYears:L.MESL[horizon-1]; clearTimeout(hzT); hzT=setTimeout(drawLayer,60); });
 
 /* ================= APIs ================= */
@@ -245,11 +337,13 @@ function fetchPower(lat,lng){
   const p=powerChain.then(run,run); powerChain=p.catch(()=>{}); return p;
 }
 async function fetchPowerOnce(lat,lng){
-  const url=`https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,GWETTOP,GWETROOT,T2M&community=AG&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&start=19810101&end=${ymd(new Date())}&format=JSON`;
+  const url=`https://power.larc.nasa.gov/api/temporal/daily/point?parameters=PRECTOTCORR,GWETTOP,GWETROOT,T2M&community=AG&longitude=${lng.toFixed(4)}&latitude=${lat.toFixed(4)}&start=19810101&end=${ymd(new Date())}&time-standard=LST&format=JSON`;
   const d=await getJSON(url, 90000), p=d.properties.parameter, fill=(d.header&&d.header.fill_value)||-999;
   const keys=Object.keys(p.PRECTOTCORR).sort();
   const arr=k=>Float64Array.from(keys, d=>{const v=p[k][d]; return (v===fill||v==null)?NaN:v;});
-  return {dates:keys, P:arr('PRECTOTCORR'), GT:arr('GWETTOP'), GR:arr('GWETROOT'), T:arr('T2M')};
+  return {dates:keys, P:arr('PRECTOTCORR'), GT:arr('GWETTOP'), GR:arr('GWETROOT'), T:arr('T2M'),
+    powerSources:(d.header&&d.header.sources)||[], powerVersion:d.header&&d.header.api&&d.header.api.version,
+    timeStandard:d.header&&d.header.time_standard};
 }
 async function fetchSlope(lat,lng){
   const d=0.0025, la=[lat,lat+d,lat-d,lat,lat], lo=[lng,lng,lng,lng+d,lng-d];
@@ -259,14 +353,14 @@ async function fetchSlope(lat,lng){
 }
 async function geocode(q){
   const r=await getJSON(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=7&language=${L.geo}&format=json`, 15000);
-  return (r.results||[]).map(x=>({name:x.name, sub:[x.admin1,x.country].filter(Boolean).join(', '), lat:x.latitude, lng:x.longitude}));
+  return (r.results||[]).map(x=>({name:x.name, sub:[x.admin1,x.country].filter(Boolean).join(', '), lat:x.latitude, lng:x.longitude, countryCode:(x.country_code||'').toUpperCase()}));
 }
 async function reverse(lat,lng){
   try{
     const r=await getJSON(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat.toFixed(4)}&lon=${lng.toFixed(4)}&zoom=10&accept-language=${L.geo}`, 12000);
     if(!r||r.error) return null; const a=r.address||{};
     const name=a.city||a.town||a.village||a.municipality||a.county||a.state_district||a.state||r.name;
-    return name ? {name, sub:[a.state,a.country].filter(v=>v&&v!==name).join(', ')} : null;
+    return name ? {name, sub:[a.state,a.country].filter(v=>v&&v!==name).join(', '), countryCode:(a.country_code||'').toUpperCase()} : null;
   }catch(e){ return null; }
 }
 function inRing(x,y,ring){let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [xi,yi]=ring[i],[xj,yj]=ring[j];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))c=!c;}return c;}
@@ -278,8 +372,8 @@ const V = k => ({label:L.vars[k][0], unit:L.vars[k][1], def:L.vars[k][2], dec:VD
 function analyze(S){
   const n=S.dates.length, {P,GT,GR,T}=S, yr=S.dates.map(d=>+d.slice(0,4)), mo=S.dates.map(d=>+d.slice(4,6)-1);
   const roll=(w,t)=>{let s=0; for(let k=t-w+1;k<=t;k++){ if(k<0||Number.isNaN(P[k])) return NaN; s+=P[k]; } return s;};
-  // linha de base 2001–2017, a mesma usada no treino do modelo de disparo
-  const b0=S.dates.indexOf('20010101'), b1=S.dates.indexOf('20171231');
+  // O v2 usa referência fixa anterior aos rótulos; o ramo legado preserva o contrato antigo.
+  const b0=S.dates.indexOf('20010101'), b1=S.dates.indexOf(WEATHER_V2?'20061231':'20171231');
   const B={D:[],R3:[],R7:[],R14:[],GT:[],GR:[]}; let psum=0, pn=0;
   for(let t=b0;t<=b1;t++){
     if(!Number.isNaN(P[t])){B.D.push(P[t]); psum+=P[t]; pn++;}
@@ -293,11 +387,12 @@ function analyze(S){
   function feats(t){
     if(t<30) return null;
     for(let k=t-29;k<=t;k++) if(Number.isNaN(P[k])) return null;
-    if(Number.isNaN(GT[t-1])||Number.isNaN(GR[t-1])) return null;
-    const r1=Math.max(P[t],P[t-1]), r3=roll(3,t), r7=roll(7,t), r14=roll(14,t), r30=roll(30,t), gt=GT[t-1], gr=GR[t-1];
+    const soilIndex=WEATHER_V2?t:t-1;
+    if(Number.isNaN(GT[soilIndex])||Number.isNaN(GR[soilIndex])) return null;
+    const r1=WEATHER_V2?P[t]:Math.max(P[t],P[t-1]), r3=roll(3,t), r7=roll(7,t), r14=roll(14,t), r30=roll(30,t), gt=GT[soilIndex], gr=GR[soilIndex];
     return [r1,r3,r7,r14,r30,r30-r7,pct(B.D,r1),pct(B.R3,r3),pct(B.R7,r7),pct(B.R14,r14),gt,gr,pct(B.GT,gt),pct(B.GR,gr),map,r7/Math.max(1,q95_7)];
   }
-  let last=n-1; while(last>0 && (Number.isNaN(P[last])||Number.isNaN(GT[last-1])||Number.isNaN(GR[last-1]))) last--;
+  let last=n-1; while(last>0 && (Number.isNaN(P[last])||Number.isNaN(GT[WEATHER_V2?last:last-1])||Number.isNaN(GR[WEATHER_V2?last:last-1]))) last--;
   const recent=[];
   for(let t=Math.max(30,last-119);t<=last;t++){ const x=feats(t); recent.push({d:S.dates[t], p:P[t], r7:roll(7,t), gt:GT[t], s:x?predictTrig(x):NaN}); }
   const xNow=feats(last), now={date:S.dates[last], score:xNow?predictTrig(xNow):NaN, r7:xNow?xNow[2]:NaN, pr7:xNow?xNow[8]:NaN, gt:xNow?xNow[10]:NaN, pgt:xNow?xNow[12]:NaN, q95_7};
@@ -336,7 +431,8 @@ function analyze(S){
     const df=neff-2, tval=r*Math.sqrt(df/(1-r*r)), tc=tcrit(df);
     lags.push({L:Lg, r, n:xs.length, neff, p:tPval(tval,df), rc:tc/Math.sqrt(df+tc*tc)});
   }
-  return {years, series, trends, recent, now, map, th7, thg, monthly, comp, lags, meanMonthly:mean(clim)};
+  return {years, series, trends, recent, now, map, th7, thg, monthly, comp, lags, meanMonthly:mean(clim),
+    powerSources:S.powerSources, powerVersion:S.powerVersion, timeStandard:S.timeStandard};
 }
 const cache=new Map();
 function study(pl){
@@ -355,7 +451,134 @@ const TX=(x,y,t,a='start',c='#9fc2bf',fs=11,ff='Figtree, sans-serif')=>`<text x=
 const MONO='IBM Plex Mono, monospace';
 
 let current=null, vk='rx5', radius=250, reqId=0, status={k:null};
+let telegramState={enabled:false,reason:'checking',feedback:null,busy:false};
+function updateA11yUi(announce=false){
+  applyA11yClasses();
+  document.querySelectorAll('[data-a11y]').forEach(b=>b.setAttribute('aria-pressed',String(Boolean(a11yPrefs[b.dataset.a11y]))));
+  if(reduced){globe.controls().autoRotate=false;globe.ringsData([]);}
+  else if(!current) globe.controls().autoRotate=true;
+  else globe.ringsData([{lat:current.pl.lat,lng:current.pl.lng,sel:true,r:radius/111}].concat(layer==='risk'?[]:deadliest));
+  const active=Object.keys(A11Y_DEFAULT).filter(k=>a11yPrefs[k]).map(k=>L.a11yNames[k]);
+  $('#a11y-status').textContent=announce?(active.length?L.a11yStatus(active):L.a11yNone):'';
+}
+function setA11yPanel(open){
+  $('#a11y-panel').hidden=!open;
+  $('#a11y-toggle').setAttribute('aria-expanded',String(open));
+  if(open){updateA11yUi(false);$('#a11y-close').focus();}else $('#a11y-toggle').focus();
+}
+$('#a11y-toggle').addEventListener('click',()=>setA11yPanel($('#a11y-panel').hidden));
+$('#a11y-close').addEventListener('click',()=>setA11yPanel(false));
+$('#a11y-panel').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a11y]'); if(!b) return;
+  const key=b.dataset.a11y; a11yPrefs[key]=!a11yPrefs[key]; store.set('dd-a11y',a11yPrefs); updateA11yUi(true);
+});
+$('#a11y-reset').addEventListener('click',()=>{a11yPrefs={...A11Y_DEFAULT};store.set('dd-a11y',a11yPrefs);updateA11yUi(true);});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#a11y-panel').hidden)setA11yPanel(false);});
+const onMotionPreference=()=>updateA11yUi(false);
+if(motionMedia.addEventListener) motionMedia.addEventListener('change',onMotionPreference); else motionMedia.addListener(onMotionPreference);
+function renderCatalogStatus(){
+  const pub=COOLR_STATUS.published_catalog;
+  $('#catalog-published-value').textContent=L.catalogPublished(fmt(pub.records),pub.event_period.min.slice(0,4),pub.event_period.max.slice(0,4));
+}
+function renderTelegramStatus(){
+  const hasResult=Boolean(current&&current.A&&!Number.isNaN(current.A.now.score));
+  const key=telegramState.feedback||(telegramState.enabled?(hasResult?'ready':'no_result'):telegramState.reason);
+  $('#telegram-status').textContent=L.telegramStatus[key]||L.telegramStatus.failed;
+  $('#telegram-send').disabled=telegramState.busy||!telegramState.enabled||!hasResult;
+}
+async function loadTelegramStatus(){
+  telegramState={enabled:false,reason:'checking',feedback:null,busy:false}; renderTelegramStatus();
+  try{
+    const response=await fetch('api/telegram/status',{headers:{Accept:'application/json'},cache:'no-store'});
+    if(!response.ok) throw new Error('backend');
+    const body=await response.json();
+    telegramState={enabled:body.enabled===true,reason:body.reason||'backend_unavailable',feedback:null,busy:false};
+    // Só aparece quando há backend (server.py). Em hospedagem estática, como o
+    // GitHub Pages, o painel continua oculto em vez de exibir erro ao visitante.
+    $('#telegram-notice').hidden=false;
+  }catch(err){telegramState={enabled:false,reason:'backend_unavailable',feedback:null,busy:false};}
+  renderTelegramStatus();
+}
+$('#telegram-send').addEventListener('click',async()=>{
+  if(!current||!current.A||Number.isNaN(current.A.now.score)||!telegramState.enabled||telegramState.busy) return;
+  const pl=current.pl,nw=current.A.now,cl=trigClass(nw.score);
+  telegramState.busy=true; telegramState.feedback='sending'; renderTelegramStatus();
+  try{
+    const response=await fetch('api/telegram/notices',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({
+      place:[plName(pl),pl.sub].filter(Boolean).join(', ').slice(0,120),latitude:+pl.lat.toFixed(2),longitude:+pl.lng.toFixed(2),
+      score:Math.round(nw.score*100),band:cl.key,data_reference:nw.date
+    })});
+    telegramState.feedback=response.status===429?'rate_limited':response.ok?'sent':'failed';
+  }catch(err){telegramState.feedback='failed';}
+  telegramState.busy=false; renderTelegramStatus();
+});
 const plName = pl => pl.nameKey ? L[pl.nameKey] : pl.name;
+function setSimpleState(kind,title,text){
+  const s=$('#simple-state'); s.className=`result-state ${kind}`;
+  $('#simple-state-title').textContent=title; $('#simple-state-text').textContent=text;
+  $('#resumo-local').setAttribute('aria-busy',String(kind==='loading'));
+}
+function renderOfficial(pl){
+  const br=(pl.countryCode||'').toUpperCase()==='BR', a=$('#official-link');
+  $('#official-text').textContent=L.officialText;
+  a.href=br?'https://www.gov.br/mdr/pt-br/assuntos/protecao-e-defesa-civil/saiba-como-agir':'https://worldweather.wmo.int/en/members.html';
+  a.textContent=br?L.officialBrazil:L.officialGlobal;
+}
+function renderSimpleHeader(pl){
+  const acc=Number.isFinite(pl.accuracyM)?L.accuracy(pl.accuracyM):'';
+  $('#simple-place-name').textContent=plName(pl);
+  $('#simple-place-detail').textContent=L.simplePlaceDetail(pl.sub,coordTxt(pl.lat,pl.lng),acc);
+  const cell=nearestCell(pl.lat,pl.lng), cov=$('#simple-coverage');
+  cov.textContent=cell?L.coverageOk:L.coverageNone; cov.className='coverage-state'+(cell?'':' outside');
+  $('#simple-limit').textContent=L.simpleLimit(acc);
+  renderOfficial(pl);
+}
+function renderSimpleLoading(pl){
+  renderSimpleHeader(pl); setSimpleState('loading',L.simpleLoadingTitle,L.simpleLoadingText);
+  $('#simple-result-value').textContent='–'; $('#simple-result-value').removeAttribute('aria-label'); $('#simple-result-band').textContent='–'; $('#simple-result-text').textContent=L.simpleLoadingText;
+  $('#simple-drivers').innerHTML=''; $('#simple-period').textContent=L.simpleLoadingText; $('#simple-source').textContent='';
+  $('#simple-score-guide').textContent=L.scorePending;
+  renderTelegramStatus();
+}
+function renderSimpleFailure(){
+  setSimpleState('error',L.simpleErrorTitle,L.simpleErrorText);
+  $('#simple-result-value').textContent='–'; $('#simple-result-band').textContent=L.simpleErrorTitle; $('#simple-result-text').textContent=L.simpleErrorText;
+  $('#simple-drivers').innerHTML=''; $('#simple-period').textContent='–'; $('#simple-source').textContent='';
+  $('#simple-score-guide').textContent=L.scoreUnavailable;
+  renderTelegramStatus();
+}
+function renderSimpleResult(pl,A){
+  renderSimpleHeader(pl); const nw=A.now;
+  const product=A.powerSources&&A.powerSources.length?A.powerSources.join(' / '):'';
+  $('#simple-period').textContent=L.simplePeriod(dFmt(nw.date));
+  $('#simple-source').textContent=L.simpleSource(product,A.timeStandard||'');
+  if(Number.isNaN(nw.score)){
+    setSimpleState('insufficient',L.simpleInsufficientTitle,L.simpleInsufficientText);
+    $('#simple-result-value').textContent='–'; $('#simple-result-band').textContent=L.simpleInsufficientTitle; $('#simple-result-text').textContent=L.simpleInsufficientText;
+    $('#simple-drivers').innerHTML=''; $('#simple-score-guide').textContent=L.scoreUnavailable; return;
+  }
+  const score=Math.round(nw.score*100), cl=trigClass(nw.score), band=clsName(cl);
+  $('#simple-result-value').innerHTML=`${score}<small>${L.score}</small>`;
+  $('#simple-result-value').setAttribute('aria-label',L.simpleResult(score,band));
+  $('#simple-result-band').textContent=L.simpleResult(score,band);
+  $('#simple-result-text').textContent=L.simpleResultText;
+  $('#simple-score-guide').textContent=L.simpleScoreGuide({score,band,elev:Math.round(TM.thr.elev*100),alto:Math.round(TM.thr.alto*100),muito:Math.round(TM.thr.muito*100)});
+  $('#simple-drivers').innerHTML=L.simpleDrivers({r7:fmt(Math.round(nw.r7)),pr7:Math.round(nw.pr7*100),gt:nf(nw.gt,2),pgt:Math.round(nw.pgt*100)}).map(x=>`<li>${x}</li>`).join('');
+  const ref=Date.UTC(+nw.date.slice(0,4),+nw.date.slice(4,6)-1,+nw.date.slice(6,8));
+  const daysOld=Math.floor((Date.now()-ref)/864e5);
+  if(daysOld>7) setSimpleState('stale',L.simpleStaleTitle,L.simpleStaleText(dFmt(nw.date)));
+  else setSimpleState('ready',L.simpleReadyTitle,L.simpleReadyText);
+  telegramState.feedback=null; renderTelegramStatus();
+}
+function renderMetricGuide(){
+  $('#simple-auc-guide').textContent=L.aucGuide(nf(TM.metrics.auc,2),nf(G.metrics.auc,2));
+}
+function applyVizAccessibility(){
+  $('#globe').setAttribute('aria-label',`${L.globeLabel} ${L.layerActiveAria(L.layerDetails[layer].title)}`);
+  $('#trigger-bar').setAttribute('aria-label',L.triggerAria);
+  const labels={recent:L.viz.recent,trend:L.viz.trend,'enso-comp':L.viz.ensoComp,'enso-trig':L.viz.ensoTrig,'enso-lag':L.viz.ensoLag,'pl-season':L.viz.season,'pl-pred':L.viz.pred,'oni-chart':L.viz.oni,'enso-regions':L.viz.regions,'div-chart':L.viz.compare,'m1-imp':L.viz.imp1,'m2-imp':L.viz.imp2,'year-chart':L.viz.year};
+  Object.entries(labels).forEach(([id,label])=>{const el=document.getElementById(id); if(el){el.setAttribute('role','img');el.setAttribute('aria-label',label);el.setAttribute('focusable','false');}});
+}
 function bars(svgId, vals, color, peakColor, fmtV){
   const W=300,H=92,B=18,T=12, mx=Math.max(...vals)||1, bw=W/12, pk=vals.indexOf(Math.max(...vals));
   let s='';
@@ -366,8 +589,8 @@ function bars(svgId, vals, color, peakColor, fmtV){
 }
 function renderHistory(pl){
   const near=PT.filter(p=>hav(pl.lat,pl.lng,p.lat,p.lng)<=radius);
-  const fat=near.reduce((s,p)=>s+p.fat,0), rain=near.filter(p=>rainSet.includes(p.trig)).length, yrs=new Set(near.map(p=>p.year)).size;
-  $('#pl-kpis').innerHTML=[[L.kpi[0],fmt(near.length)],[L.kpi[1],fmt(fat)],[L.kpi[2],near.length?Math.round(rain/near.length*100)+'%':'–'],[L.kpi[3],fmt(yrs)]].map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
+  const fat=near.reduce((s,p)=>s+p.fat,0), fatMissing=near.filter(p=>p.fatKnown===false).length, rain=near.filter(p=>rainSet.includes(p.trig)).length, yrs=new Set(near.map(p=>p.year).filter(Boolean)).size;
+  $('#pl-kpis').innerHTML=[[L.kpi[0],fmt(near.length)],[L.deathsLabel(fatMissing),fmt(fat)],[L.kpi[2],near.length?Math.round(rain/near.length*100)+'%':'–'],[L.kpi[3],fmt(yrs)]].map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
   const days={}; near.forEach(p=>{ if(p.year&&p.month&&p.day){ const k=`${p.year}${String(p.month).padStart(2,'0')}${String(p.day).padStart(2,'0')}`; days[k]=(days[k]||0)+1; } });
   const top=Object.entries(days).sort((a,b)=>b[1]-a[1])[0];
   $('#pl-episode').innerHTML = top && top[1]>1 ? L.episode(fmt(top[1]), dFmt(top[0])) : '';
@@ -377,11 +600,11 @@ function renderHistory(pl){
   const cell=nearestCell(pl.lat,pl.lng);
   if(cell){
     const cl=structClass(cell.p2), pk=cell.pm.indexOf(Math.max(...cell.pm));
-    $('#st-prob').textContent=(cell.p2<.01?'< 1':Math.round(cell.p2*100))+'%'; badge($('#st-badge'), cl, L.riskOf(clsName(cl)));
+    $('#st-prob').textContent=(cell.p2<.01?'< 1':Math.round(cell.p2*100))+L.score; badge($('#st-badge'), cl, L.riskOf(clsName(cl)));
     $('#st-txt').innerHTML=L.stTxt(L.MESL[pk]);
-    bars('pl-pred', cell.pm.map(v=>v*100), '#f58b5d', '#f55d5d', v=>`${nf(v,1)}%`);
+    bars('pl-pred', cell.pm.map(v=>v*100), '#f58b5d', '#f55d5d', v=>`${nf(v,1)}${L.score}`);
   } else {
-    $('#st-prob').textContent='< 1%'; badge($('#st-badge'), CLS.nd, L.outModel);
+    $('#st-prob').textContent='–'; badge($('#st-badge'), CLS.nd, L.outModel);
     $('#st-txt').textContent=L.stNone;
     bars('pl-pred', Array(12).fill(0), '#f58b5d', '#f55d5d', v=>`${nf(v,1)}%`);
   }
@@ -492,18 +715,20 @@ function setStatus(k, args){
 function renderHeader(pl){
   $('#pl-name').textContent=plName(pl);
   $('#pl-coord').textContent=[pl.sub, coordTxt(pl.lat,pl.lng)].filter(Boolean).join(' · ');
+  renderSimpleHeader(pl);
 }
 async function selectPlace(pl, opts={}){
   const id=++reqId; current={pl};
   renderHeader(pl);
+  renderSimpleLoading(pl);
   ['#now-score','#st-prob','#sl-deg','#en-delta'].forEach(s=>$(s).textContent='…');
   ['#now-badge','#sl-badge','#en-badge'].forEach(s=>{$(s).textContent='';$(s).style.background='';});
   ['#now-txt','#sl-txt','#en-txt'].forEach(s=>$(s).textContent='');
   $('#pl-csv').disabled=true;
   renderHistory(pl); updateSaveBtn(); paintGlobeMarks();
-  globe.ringsData([{lat:pl.lat,lng:pl.lng,sel:true,r:radius/111}].concat(reduced||layer==='risk'?[]:deadliest));
+  globe.ringsData(reduced?[]:[{lat:pl.lat,lng:pl.lng,sel:true,r:radius/111}].concat(layer==='risk'?[]:deadliest));
   if(opts.fly!==false){ globe.controls().autoRotate=false; globe.pointOfView({lat:pl.lat,lng:pl.lng,altitude:1.9}, reduced?0:1000); }
-  if(opts.scroll) $('#s1').scrollIntoView({behavior:reduced?'auto':'smooth'});
+  if(opts.scroll) (document.body.classList.contains('advanced-open')?$('#s1'):$('#resumo-local')).scrollIntoView({behavior:reduced?'auto':'smooth'});
   const wvT=new Date(Date.now()-864e5).toISOString().slice(0,10), d=2;
   $('#pl-wv').href=`https://worldview.earthdata.nasa.gov/?v=${(pl.lng-d).toFixed(2)},${(pl.lat-d).toFixed(2)},${(pl.lng+d).toFixed(2)},${(pl.lat+d).toFixed(2)}&l=Reference_Labels_15m,Reference_Features_15m,Coastlines_15m,IMERG_Precipitation_Rate,SMAP_L4_Analyzed_Root_Zone_Soil_Moisture(hidden),VIIRS_NOAA20_CorrectedReflectance_TrueColor&t=${wvT}`;
   setStatus('loading');
@@ -512,14 +737,15 @@ async function selectPlace(pl, opts={}){
     current.A=A; renderPlace(pl,A); setStatus('done',[A.now.date]); $('#pl-csv').disabled=false;
   }catch(err){
     if(id!==reqId) return;
-    setStatus('err'); ['#now-score','#sl-deg','#en-delta'].forEach(s=>$(s).textContent='–');
+    setStatus('err'); renderSimpleFailure(); ['#now-score','#sl-deg','#en-delta'].forEach(s=>$(s).textContent='–');
   }
 }
 function renderPlace(pl,A){
+  renderSimpleResult(pl,A);
   const nw=A.now;
   if(!Number.isNaN(nw.score)){
     const cl=trigClass(nw.score);
-    $('#now-score').innerHTML=Math.round(nw.score*100)+'<small>/100</small>'; badge($('#now-badge'), cl);
+    $('#now-score').innerHTML=Math.round(nw.score*100)+`<small>${L.score}</small>`; badge($('#now-badge'), cl);
     $('#now-txt').innerHTML=L.nowTxt({r7:fmt(Math.round(nw.r7)), pr7:Math.round(nw.pr7*100), gt:nf(nw.gt,2), pgt:Math.round(nw.pgt*100), date:dFmt(nw.date)});
   } else { $('#now-score').textContent='–'; $('#now-txt').textContent=L.nowNA; }
   if(A.slope){
@@ -527,14 +753,16 @@ function renderPlace(pl,A){
     $('#sl-deg').textContent=nf(A.slope.slope,1)+'°'; badge($('#sl-badge'), cl);
     $('#sl-txt').innerHTML=L.slTxt(fmt(Math.round(A.slope.elev)));
   } else { $('#sl-deg').textContent='–'; $('#sl-txt').textContent=L.slNA; }
-  $('#recent-src').textContent=`NASA POWER (MERRA-2) · ${dFmt(A.recent[0].d)}–${dFmt(A.recent[A.recent.length-1].d)}`;
+  const powerProduct=A.powerSources&&A.powerSources.length?` (${A.powerSources.join(' / ')})`:'';
+  $('#recent-src').textContent=`NASA POWER${powerProduct} · ${dFmt(A.recent[0].d)}–${dFmt(A.recent[A.recent.length-1].d)}`;
   drawRecent(A); drawTrend(A); drawEnso(A);
 }
 
 /* CSV */
 $('#pl-csv').addEventListener('click',()=>{
   if(!current||!current.A) return; const A=current.A, pl=current.pl;
-  const head=[`# Data Detectives · ${plName(pl)} (${pl.sub||''})`,`# lat ${pl.lat.toFixed(4)}, lon ${pl.lng.toFixed(4)}`,`# ${L.csvSrc}: NASA POWER daily (MERRA-2) PRECTOTCORR, GWETTOP, GWETROOT, T2M; NOAA CPC ONI (${ENSO.updated})`,`# ${L.csvGen} ${new Date().toISOString()}`,
+  const powerProduct=A.powerSources&&A.powerSources.length?` (${A.powerSources.join(' / ')})`:'';
+  const head=[`# Data Detectives · ${plName(pl)} (${pl.sub||''})`,`# lat ${pl.lat.toFixed(4)}, lon ${pl.lng.toFixed(4)}`,`# ${L.csvSrc}: NASA POWER daily${powerProduct} PRECTOTCORR, GWETTOP, GWETROOT, T2M; NOAA CPC ONI (${ENSO.updated})`,`# ${L.csvGen} ${new Date().toISOString()}`,
     L.csvTrig(A.th7.toFixed(1), A.thg.toFixed(3))];
   const rows=[L.csvCols].concat(A.monthly.map(r=>[r.y,r.m+1,r.rain.toFixed(2),r.anom.toFixed(2),r.trig,Number.isNaN(r.soil)?'':r.soil.toFixed(4),Number.isNaN(r.t2m)?'':r.t2m.toFixed(2),r.oni??'',r.phase??''].join(',')));
   const blob=new Blob([head.join('\n')+'\n'+rows.join('\n')],{type:'text/csv'});
@@ -544,35 +772,81 @@ $('#pl-csv').addEventListener('click',()=>{
 
 /* ================= busca e clique ================= */
 const inp=$('#busca'), list=$('#busca-res'); let found=[], sel=-1, tmo;
+function hideList(){ list.hidden=true; inp.setAttribute('aria-expanded','false'); inp.removeAttribute('aria-activedescendant'); }
 function showList(items,msg){
   found=items; sel=-1;
-  list.innerHTML = msg ? `<li class="msg">${msg}</li>` : items.map((r,i)=>`<li role="option" id="opt-${i}" data-i="${i}" aria-selected="false"><span class="r1">${r.name}</span><span class="r2">${r.sub} · ${coordTxt(r.lat,r.lng)}</span></li>`).join('');
-  list.hidden=false;
+  list.innerHTML = msg ? `<li class="msg" role="status">${msg}</li>` : items.map((r,i)=>`<li role="option" id="opt-${i}" data-i="${i}" aria-selected="false"><span class="r1">${r.name}</span><span class="r2">${r.sub} · ${coordTxt(r.lat,r.lng)}</span></li>`).join('');
+  list.hidden=false; inp.setAttribute('aria-expanded','true');
 }
-inp.addEventListener('input',()=>{ clearTimeout(tmo); const q=inp.value.trim(); if(q.length<2){list.hidden=true;return;}
+inp.addEventListener('input',()=>{ clearTimeout(tmo); const q=inp.value.trim(); if(q.length<2){hideList();return;}
   tmo=setTimeout(async()=>{ try{ const r=await geocode(q); if(inp.value.trim()!==q) return; r.length?showList(r):showList([],L.pNone); }catch(e){ showList([],L.pFail); } },250); });
 inp.addEventListener('keydown',e=>{
   if(list.hidden||!found.length) return;
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){ e.preventDefault(); sel=(sel+(e.key==='ArrowDown'?1:-1)+found.length)%found.length;
-    list.querySelectorAll('li').forEach((li,i)=>li.setAttribute('aria-selected',i===sel)); }
-  if(e.key==='Escape') list.hidden=true;
+    list.querySelectorAll('li').forEach((li,i)=>li.setAttribute('aria-selected',i===sel)); inp.setAttribute('aria-activedescendant',`opt-${sel}`); }
+  if(e.key==='Escape') hideList();
 });
-function pick(i){ const r=found[i]; if(!r) return; list.hidden=true; inp.value=r.name; selectPlace(r,{scroll:true}); }
+function pick(i){ const r=found[i]; if(!r) return; hideList(); inp.value=r.name; selectPlace(r,{scroll:true}); }
 list.addEventListener('click',e=>{const li=e.target.closest('li[data-i]'); if(li) pick(+li.dataset.i);});
 $('#busca-wrap').addEventListener('submit',async e=>{ e.preventDefault(); const q=inp.value.trim(); if(!q) return;
   if(found.length&&!list.hidden) return pick(sel>=0?sel:0);
   try{ const r=await geocode(q); r.length?(found=r,pick(0)):showList([],L.pNone); }catch(err){ showList([],L.pFail); } });
-document.addEventListener('click',e=>{ if(!e.target.closest('#busca-wrap')) list.hidden=true; });
+document.addEventListener('click',e=>{ if(!e.target.closest('#busca-wrap')) hideList(); });
 const SUG=['Petrópolis','Medellín','Kathmandu','Baguio','Wayanad','Los Angeles'];
 function renderSuggest(){ $('#suggest').innerHTML=`<span>${L.tryIt}</span>`+SUG.map(s=>`<button class="chip" type="button" data-q="${s}">${s}</button>`).join(''); }
 $('#suggest').addEventListener('click',async e=>{const b=e.target.closest('.chip'); if(!b) return; inp.value=b.dataset.q;
   try{ const r=await geocode(b.dataset.q); if(r.length){found=r; pick(0);} }catch(err){ setStatus('msg',[()=>L.pFail]); } });
+
+/* Geolocalização sob demanda. A coordenada arredondada permanece em memória;
+   só é persistida se a pessoa usar explicitamente a comparação. */
+const geoBtn=$('#geo-btn'), geoStatus=$('#geo-status');
+function geoMessage(msg,error=false){ geoStatus.textContent=msg; geoStatus.className='geo-status'+(error?' error':''); }
+geoBtn.addEventListener('click',()=>{
+  if(!navigator.geolocation){ geoMessage(L.geoUnavailable,true); return; }
+  geoBtn.disabled=true; geoBtn.classList.add('loading'); geoMessage(L.geoLoading);
+  navigator.geolocation.getCurrentPosition(pos=>{
+    geoBtn.disabled=false; geoBtn.classList.remove('loading');
+    const accuracy=Number.isFinite(pos.coords.accuracy)?pos.coords.accuracy:null;
+    // 3 casas (~110 m no equador) evitam conservar precisão além da necessária.
+    const lat=+pos.coords.latitude.toFixed(3), lng=+pos.coords.longitude.toFixed(3);
+    const pl={lat,lng,nameKey:'point',sub:'',accuracyM:accuracy,fromGeolocation:true};
+    geoMessage(L.geoFound(accuracy==null?'–':L.accuracy(accuracy)));
+    selectPlace(pl,{scroll:true});
+    reverse(lat,lng).then(r=>{
+      if(!r||!current||current.pl!==pl) return;
+      delete pl.nameKey; pl.name=r.name; pl.sub=r.sub; pl.countryCode=r.countryCode;
+      renderHeader(pl); updateSaveBtn();
+    });
+  },err=>{
+    geoBtn.disabled=false; geoBtn.classList.remove('loading');
+    const msg=err.code===1?L.geoDenied:err.code===2?L.geoPositionUnavailable:err.code===3?L.geoTimeout:L.geoError;
+    geoMessage(msg,true);
+  },{enableHighAccuracy:false,timeout:15000,maximumAge:300000});
+});
+
+$('#correct-location').addEventListener('click',()=>{
+  document.querySelector('#busca-wrap').scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'});
+  setTimeout(()=>inp.focus(),reduced?0:350);
+});
+
+function setAdvanced(open,scroll=false){
+  const box=$('#advanced-content'); box.hidden=!open; document.body.classList.toggle('advanced-open',open);
+  const openLabel=lang==='pt'?'Explorar dados e metodologia':(I18N.html[lang].explore||'Explorar dados e metodologia');
+  [$('#explore-nav'),$('#explore-main')].forEach(b=>{ b.setAttribute('aria-expanded',String(open)); b.textContent=open?L.exploreClose:openLabel; });
+  if(scroll){
+    const target=open?$('#pl-name'):$('#resumo-local');
+    target.scrollIntoView({behavior:reduced?'auto':'smooth'});
+    if(open){ target.setAttribute('tabindex','-1'); setTimeout(()=>target.focus({preventScroll:true}),reduced?0:350); }
+  }
+}
+[$('#explore-nav'),$('#explore-main')].forEach(b=>b.addEventListener('click',()=>setAdvanced($('#advanced-content').hidden,true)));
+
 async function onPick({lat,lng}){
   const c=countryAt(lat,lng);
   const pl={lat,lng,nameKey:c?'point':'ocean',sub:c||''};
   selectPlace(pl,{scroll:false});
   const r=await reverse(lat,lng);
-  if(r && current && current.pl===pl){ delete pl.nameKey; pl.name=r.name; pl.sub=r.sub; renderHeader(pl); updateSaveBtn(); }
+  if(r && current && current.pl===pl){ delete pl.nameKey; pl.name=r.name; pl.sub=r.sub; pl.countryCode=r.countryCode; renderHeader(pl); updateSaveBtn(); }
 }
 globe.onGlobeClick(onPick);
 globe.onPointClick(p=>onPick({lat:p.lat,lng:p.lng}));
@@ -580,9 +854,9 @@ globe.onPointClick(p=>onPick({lat:p.lat,lng:p.lng}));
 /* ================= comparação ================= */
 let saved=store.get('dd-places',[]), cvk='rx5';
 const sameP=(a,b)=>Math.abs(a.lat-b.lat)<1e-3&&Math.abs(a.lng-b.lng)<1e-3;
-function updateSaveBtn(){ const b=$('#pl-save'); if(!current) return; const on=saved.some(s=>sameP(s,current.pl)); b.textContent=on?L.saved:L.save; b.disabled=on; }
+function updateSaveBtn(){ const b=$('#pl-save'); if(!current) return; const on=saved.some(s=>sameP(s,current.pl)); b.textContent=on?L.saved:(current.pl.fromGeolocation?L.saveGeo:L.save); b.disabled=on; }
 $('#pl-save').addEventListener('click',()=>{ if(!current||saved.some(s=>sameP(s,current.pl))) return;
-  const {sub,lat,lng}=current.pl; saved.push({name:plName(current.pl),sub,lat,lng}); store.set('dd-places',saved); updateSaveBtn(); renderCompare(); paintGlobeMarks(); });
+  const {sub,lat,lng,countryCode}=current.pl; saved.push({name:plName(current.pl),sub,lat,lng,countryCode}); store.set('dd-places',saved); updateSaveBtn(); renderCompare(); paintGlobeMarks(); });
 function paintGlobeMarks(){ globe.labelsData(saved.map(s=>({lat:s.lat,lng:s.lng,name:s.name}))); }
 $('#cmp-vars').addEventListener('click',e=>{const b=e.target.closest('.chip'); if(!b) return; cvk=b.dataset.k;
   document.querySelectorAll('#cmp-vars .chip').forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===cvk)); renderCompare();});
@@ -594,7 +868,7 @@ async function renderCompare(){
   const rows=[];
   await Promise.all(saved.map(async (s,i)=>{
     const tr=body.querySelector(`tr[data-i="${i}"]`); if(!tr) return; const cell=nearestCell(s.lat,s.lng), cs=cell?structClass(cell.p2):CLS.nd;
-    tr.querySelector('.c-st').innerHTML=`<span class="pillc" style="background:${cs.c};color:${cs.t}">${cell?Math.round(cell.p2*100)+'% · '+clsName(cs):clsName(cs)}</span>`;
+    tr.querySelector('.c-st').innerHTML=`<span class="pillc" style="background:${cs.c};color:${cs.t}">${cell?Math.round(cell.p2*100)+L.score+' · '+clsName(cs):clsName(cs)}</span>`;
     try{
       const A=await study(s), st=A.trends[cvk], cl=trigClass(A.now.score), w=A.comp.nino.w;
       if(!tr.isConnected) return;
@@ -627,8 +901,8 @@ function drawDiverging(rows){
 /* ================= seção ENSO global ================= */
 const REGB=[[-90,90,-180,180],[5,37,60,92],[-11,25,92,141],[-56,13,-82,-34],[7,24,-118,-59],[24,72,-170,-52]];
 const REGSTAT=REGB.map(([a,b,c,d])=>{
-  const cnt=new Map(); for(let k=2007*12;k<=2017*12+11;k++) cnt.set(k,0);
-  PT.forEach(p=>{ if(p.year>=2007&&p.year<=2017&&p.month>=1&&p.lat>=a&&p.lat<=b&&p.lng>=c&&p.lng<=d){const k=p.year*12+p.month-1; cnt.set(k,cnt.get(k)+1);} });
+  const cnt=new Map(); for(let k=2007*12;k<=2025*12+11;k++) cnt.set(k,0);
+  PT.forEach(p=>{ if(p.year>=2007&&p.year<=2025&&p.month>=1&&p.lat>=a&&p.lat<=b&&p.lng>=c&&p.lng<=d){const k=p.year*12+p.month-1; cnt.set(k,cnt.get(k)+1);} });
   const ym={}; cnt.forEach((v,k)=>{const y=Math.floor(k/12); ym[y]=(ym[y]||0)+v/12;});
   const g={nino:[],neutro:[],nina:[]}; cnt.forEach((v,k)=>{const y=Math.floor(k/12), ph=phaseOf(k); if(ph&&ym[y]>0) g[ph].push(v/ym[y]);});
   const st={}; for(const ph in g){const a2=g[ph]; st[ph]={m:a2.length?mean(a2):NaN, se:a2.length>2?sd(a2)/Math.sqrt(a2.length):0, n:a2.length};}
@@ -678,7 +952,7 @@ function renderCatalogModels(){
   $('#trigger-legend').innerHTML=segs.map(([k,n])=>`<span><i style="background:${pal[k]}"></i>${nm(k)} <span class="mono">${nf(n/total*100,1)}%</span></span>`).join('');
 
   const svg=$('#year-chart'), W=640,H=300,Lm=46,R=10,T=20,B=30, yc={};
-  PT.forEach(p=>{if(p.year>=2007&&p.year<=2017) yc[p.year]=(yc[p.year]||0)+1});
+  PT.forEach(p=>{if(p.year>=2007&&p.year<=2025) yc[p.year]=(yc[p.year]||0)+1});
   const ys=Object.keys(yc).map(Number).sort(), mx=Math.max(...Object.values(yc)), ticks=niceTicks(0,mx*1.08), top=ticks[ticks.length-1], bw=(W-Lm-R)/ys.length, Yp=v=>T+(top-v)/top*(H-T-B);
   let s='';
   ticks.forEach(t=>{s+=`<line x1="${Lm}" x2="${W-R}" y1="${Yp(t)}" y2="${Yp(t)}" stroke="rgba(11,40,39,.1)"/>`+TX(Lm-8,Yp(t)+4,fmt(t),'end','#4b6866',11,MONO);});
@@ -697,9 +971,11 @@ function renderCatalogModels(){
     svg.setAttribute('viewBox',`0 0 ${W} ${top.length*rh+8}`); svg.innerHTML=s;
   }
   const m1=TM.metrics, m2=G.metrics;
-  $('#m1-metrics').innerHTML=L.m1m({auc:nf(m1.auc,2), base:nf(m1.base_auc,2), time:nf(m1.auc_time,2), rec:Math.round(m1.recall_alto*100)+'%', fpr:Math.round((1-m1.spec_alto)*100)})
+  const m1rows=WEATHER_V2?L.m1mV2({auc:nf(m1.auc,2),base:nf(m1.base_auc,2),time:nf(m1.auc_time,2),btime:nf(m1.base_auc_time,2),ap:nf(m1.ap,2),bap:nf(m1.base_ap,2)}):L.m1m({auc:nf(m1.auc,2), base:nf(m1.base_auc,2), time:nf(m1.auc_time,2), rec:Math.round(m1.recall_alto*100)+'%', fpr:Math.round((1-m1.spec_alto)*100)});
+  $('#m1-metrics').innerHTML=m1rows
     .map(([a,b,c])=>`<div><dt>${a}</dt><dd>${b}</dd><span class="vs">${c}</span></div>`).join('');
-  $('#m2-metrics').innerHTML=L.m2m({auc:nf(m2.auc,2), base:nf(m2.base_auc,2), top:Math.round(m2.top10*100)+'%', btop:Math.round(m2.base_top10*100)+'%', ap:nf(m2.ap,2), pr:nf(m2.pos_rate,3)})
+  const m2rows=GRID_V2?L.m2mV2({auc:nf(m2.auc,2),base:nf(m2.base_auc,2),time:nf(m2.temporal_test.auc,2),btime:nf(m2.temporal_test.baseline_auc,2),ap:nf(m2.ap,2),bap:nf(m2.base_ap,2)}):L.m2m({auc:nf(m2.auc,2), base:nf(m2.base_auc,2), top:Math.round(m2.top10*100)+'%', btop:Math.round(m2.base_top10*100)+'%', ap:nf(m2.ap,2), pr:nf(m2.pos_rate,3)});
+  $('#m2-metrics').innerHTML=m2rows
     .map(([a,b,c])=>`<div><dt>${a}</dt><dd>${b}</dd><span class="vs">${c}</span></div>`).join('');
   imp('m1-imp', TM.imp, L.imp1);
   imp('m2-imp', G.imp, L.imp2);
@@ -707,10 +983,12 @@ function renderCatalogModels(){
 
 /* ================= troca de idioma ================= */
 function renderAll(){
-  applyStatic(); renderHeroAbstract(); drawLayer(); renderVarChips(); renderSuggest();
-  renderEnsoSection(); renderCatalogModels(); renderCompare(); updateSaveBtn();
+  applyStatic(); updateA11yUi(false); renderHeroAbstract(); drawLayer(); renderVarChips(); renderSuggest();
+  renderEnsoSection(); renderCatalogModels(); renderCompare(); renderMetricGuide(); renderCatalogStatus(); applyVizAccessibility(); updateSaveBtn();
   if(current){ renderHeader(current.pl); renderHistory(current.pl); if(current.A) renderPlace(current.pl, current.A); }
   if(status.k) setStatus(status.k, status.args);
+  renderTelegramStatus();
+  setAdvanced(!$('#advanced-content').hidden,false);
 }
 document.querySelector('.lang').addEventListener('click',e=>{
   const b=e.target.closest('button[data-lang]'); if(!b||b.dataset.lang===lang) return;
@@ -721,6 +999,6 @@ document.querySelector('.lang').addEventListener('click',e=>{
 if(window.katex) document.querySelectorAll('.eq[data-tex]').forEach(el=>{ try{ katex.render(el.dataset.tex, el, {displayMode:true, throwOnError:false}); }catch(e){ el.textContent=el.dataset.tex; } });
 
 /* ================= início ================= */
-renderAll(); paintGlobeMarks();
-selectPlace({name:'Petrópolis', sub:'Rio de Janeiro, Brasil', lat:-22.505, lng:-43.1786}, {fly:true, scroll:false});
+renderAll(); paintGlobeMarks(); loadTelegramStatus();
+selectPlace({name:'Petrópolis', sub:'Rio de Janeiro, Brasil', lat:-22.505, lng:-43.1786, countryCode:'BR'}, {fly:true, scroll:false});
 })().catch(err=>{ console.error(err); const s=document.getElementById('pl-status'); if(s){s.className='status error'; const L=(window.I18N&&I18N.str.pt)||{}; s.textContent=L.init_err||'Falha ao iniciar o app.';} });

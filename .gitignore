@@ -1,4 +1,12 @@
 __pycache__/
 *.pyc
+.venv/
 raw/
+data/runs/
+.env
+.env.*
+!*.env.example
 .claude/
+
+# Evidências/backup de promoção: locais, contêm caminhos da máquina
+data/releases/

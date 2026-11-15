@@ -4,58 +4,83 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Data Detectives</title>
-<meta name="description" content="Landslide trends, El Niño and prediction with NASA and NOAA data.">
+<meta name="description" content="Indicadores regionais para compreender deslizamentos, com fontes, períodos e limitações rastreáveis.">
 <link rel="icon" href="assets/logo.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
 
+<div class="skip-links" aria-label="Atalhos de navegação">
+  <a class="skip-link" href="#conteudo" data-i18n="skip">Ir para o conteúdo principal</a>
+</div>
+
 <nav class="nav" aria-label="Menu">
   <a class="brand" href="#topo">
-    <span class="brand-logo"><img src="assets/logo.webp" alt="Data Detectives" onerror="this.closest('.brand').classList.add('no-logo')"></span>
+    <span class="brand-logo"><img src="assets/logo-white.png" alt="Data Detectives" onerror="this.closest('.brand').classList.add('no-logo')"></span>
     <span class="brand-text"><span class="brand-mark"><i></i><i></i></span><span>Data<br>Detectives</span></span>
   </a>
   <div class="pills">
-    <a class="pill" href="#s1" data-i18n="nav1">1 · Lugar</a>
-    <a class="pill" href="#s2" data-i18n="nav2">2 · ENSO</a>
-    <a class="pill" href="#s3" data-i18n="nav3">3 · Comparar</a>
-    <a class="pill" href="#s4" data-i18n="nav4">4 · Modelos</a>
-    <a class="pill" href="#s5" data-i18n="nav5">5 · Métodos</a>
+    <a class="pill" href="#resumo-local" data-i18n="nav_summary">Resultado</a>
+    <button class="pill a11y-nav" type="button" id="a11y-toggle" aria-expanded="false" aria-controls="a11y-panel"><span aria-hidden="true">◐</span> <span data-i18n="a11y_open">Acessibilidade</span></button>
     <div class="lang" role="group" aria-label="Idioma / Language / Idioma">
       <button type="button" data-lang="pt" aria-pressed="true">PT</button><button type="button" data-lang="en" aria-pressed="false">EN</button><button type="button" data-lang="es" aria-pressed="false">ES</button>
     </div>
-    <a class="pill cta" href="#busca-wrap" data-i18n="navcta">Investigar</a>
+    <button class="pill cta" type="button" id="explore-nav" aria-expanded="false" aria-controls="advanced-content" data-i18n="explore">Explorar dados e metodologia</button>
   </div>
 </nav>
+
+<aside class="a11y-panel" id="a11y-panel" aria-labelledby="a11y-title" hidden>
+  <div class="a11y-panel-head">
+    <div><span class="eyebrow" data-i18n="a11y_eyebrow">Preferências de leitura</span><h2 id="a11y-title" data-i18n="a11y_title">Ajuste a tela para você</h2></div>
+    <button class="icon-btn" type="button" id="a11y-close" aria-label="Fechar preferências de acessibilidade" data-i18n-aria="a11y_close">×</button>
+  </div>
+  <p data-i18n="a11y_intro">As escolhas ficam somente neste navegador. Use os controles nativos do navegador se precisar ampliar ainda mais.</p>
+  <div class="a11y-options" role="group" aria-label="Opções de apresentação" data-i18n-aria="a11y_group">
+    <button type="button" data-a11y="text" aria-pressed="false"><span aria-hidden="true">A+</span><span data-i18n="a11y_text">Texto maior</span></button>
+    <button type="button" data-a11y="contrast" aria-pressed="false"><span aria-hidden="true">◑</span><span data-i18n="a11y_contrast">Alto contraste</span></button>
+    <button type="button" data-a11y="spacing" aria-pressed="false"><span aria-hidden="true">↕</span><span data-i18n="a11y_spacing">Mais espaçamento</span></button>
+    <button type="button" data-a11y="motion" aria-pressed="false"><span aria-hidden="true">■</span><span data-i18n="a11y_motion">Reduzir movimento</span></button>
+  </div>
+  <div class="a11y-panel-foot">
+    <button class="text-btn" type="button" id="a11y-reset" data-i18n="a11y_reset">Restaurar padrão</button>
+    <span id="a11y-status" role="status" aria-live="polite"></span>
+  </div>
+</aside>
 
 <header class="hero" id="topo">
   <div class="hero-copy">
     <p class="kicker">NASA Space Apps 2026 · Earth System Trend Detective</p>
-    <h1 data-i18n="h1">Encostas não caem por acaso. <em>Elas acumulam sinais.</em></h1>
-    <p class="sub" data-i18n="sub">Busque qualquer lugar do planeta. O Data Detectives baixa as séries da NASA na hora, testa tendências, mede a influência do El Niño e estima o risco de deslizamento com dois modelos de machine learning.</p>
+    <h1 data-i18n="h1">Informação para compreender e prevenir <em>deslizamentos.</em></h1>
+    <p class="sub" data-i18n="sub">Busque qualquer lugar do planeta. O Data Detectives baixa séries da NASA, testa tendências e apresenta dois índices experimentais relacionados a registros de deslizamentos. Não estima risco nem substitui alertas oficiais.</p>
     <form class="search" id="busca-wrap" role="search" autocomplete="off">
       <label class="sr" for="busca" data-i18n="searchlbl">Buscar lugar</label>
-      <input id="busca" type="search" data-i18n-ph="searchph" placeholder="Cidade, bairro ou região. Ex.: Petrópolis, Medellín, Kathmandu" aria-autocomplete="list" aria-controls="busca-res">
+      <input id="busca" type="search" role="combobox" data-i18n-ph="searchph" placeholder="Cidade, bairro ou região. Ex.: Petrópolis, Medellín, Kathmandu" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="busca-res">
       <button class="go" type="submit" data-i18n="go">Investigar</button>
       <ul class="results-list" id="busca-res" role="listbox" hidden></ul>
     </form>
+    <div class="geo-actions">
+      <button class="geo-btn" id="geo-btn" type="button" aria-describedby="geo-privacy"><span aria-hidden="true">◎</span> <span data-i18n="geo_use">Usar minha localização</span></button>
+      <span class="geo-status" id="geo-status" role="status" aria-live="polite"></span>
+    </div>
+    <p class="geo-privacy" id="geo-privacy" data-i18n="geo_privacy">A permissão só será solicitada depois do clique. A coordenada é usada nesta página e não é salva automaticamente.</p>
     <div class="suggest" id="suggest"></div>
   </div>
   <div class="globe-stage">
-    <div id="globe" role="img" aria-label="Globe"></div>
+    <div id="globe" role="img" aria-label="Globo interativo. A busca por nome oferece uma alternativa acessível pelo teclado." aria-describedby="globe-help"></div>
+    <p class="sr" id="globe-help">A visualização não é necessária para usar o site. Pesquise um lugar pelo campo acima ou use a descrição textual das camadas.</p>
     <div class="hero-under">
       <div class="filters">
         <span class="lbl" data-i18n="layer">Camada do globo</span>
         <div class="chips" id="layer-chips">
           <button class="chip" type="button" data-l="ev" aria-pressed="false" data-i18n="layer_ev">Eventos registrados</button>
-          <button class="chip" type="button" data-l="risk" aria-pressed="true" data-i18n="layer_risk">Risco estrutural (ML)</button>
+          <button class="chip" type="button" data-l="risk" aria-pressed="true" data-i18n="layer_risk">Recorrência histórica (ML)</button>
           <button class="chip" type="button" data-l="rain" aria-pressed="false" data-i18n="layer_rain">Chuva (IMERG)</button>
           <button class="chip" type="button" data-l="soil" aria-pressed="false" data-i18n="layer_soil">Solo (SMAP)</button>
-          <button class="chip" type="button" data-l="haz" aria-pressed="false" data-i18n="layer_haz">Perigo (NASA)</button>
+          <button class="chip" type="button" data-l="haz" aria-pressed="false" data-i18n="layer_haz">Perigo histórico (NASA)</button>
           <button class="chip" type="button" data-l="sat" aria-pressed="false" data-i18n="layer_sat">Satélite (VIIRS)</button>
         </div>
         <div id="gibs-ctl" hidden><img id="gibs-legend" alt=""><span class="cap" id="gibs-note"></span></div>
@@ -65,12 +90,147 @@
           <div class="colorbar" id="colorbar"></div>
         </div>
         <span class="count" id="pt-count"></span>
+        <div class="layer-tip" id="layer-tip" role="tooltip" hidden></div>
       </div>
       <dl class="hero-stats" id="hero-stats"></dl>
     </div>
     <span class="hint" data-i18n="hint">Arraste para girar · clique em qualquer lugar para investigar</span>
   </div>
 </header>
+
+<main id="conteudo" tabindex="-1">
+<section class="simple-view band-light" id="resumo-local" aria-labelledby="simple-title">
+  <div class="wrap">
+    <div class="simple-head">
+      <div>
+        <span class="eyebrow" data-i18n="simple_eb">Entenda o resultado</span>
+        <h2 id="simple-title" data-i18n="simple_h">Uma leitura regional, com contexto.</h2>
+      </div>
+      <div class="simple-place">
+        <span data-i18n="simple_place_label">Local analisado</span>
+        <strong id="simple-place-name">–</strong>
+        <small id="simple-place-detail"></small>
+        <button class="text-btn" id="correct-location" type="button" data-i18n="correct_place">Corrigir local</button>
+      </div>
+    </div>
+
+    <div class="result-state loading" id="simple-state" role="status" aria-live="polite">
+      <strong id="simple-state-title">Consultando dados…</strong>
+      <span id="simple-state-text">Aguarde enquanto as fontes respondem.</span>
+    </div>
+
+    <div class="simple-grid">
+      <article class="simple-card result-card">
+        <span class="simple-label" data-i18n="simple_result">Resultado calculado</span>
+        <div class="simple-value" id="simple-result-value">–</div>
+        <strong id="simple-result-band">–</strong>
+        <p id="simple-result-text">O índice ainda está sendo calculado.</p>
+        <details class="term-help">
+          <summary data-i18n="help_score_q">Isso é risco ou probabilidade?</summary>
+          <p data-i18n="help_score_a">Não. É um score experimental de semelhança com condições meteorológicas de dias com registros. Não é diagnóstico de um imóvel nem probabilidade calibrada de deslizamento.</p>
+        </details>
+      </article>
+
+      <article class="simple-card">
+        <span class="simple-label" data-i18n="simple_influences">O que influenciou</span>
+        <ul class="plain-list" id="simple-drivers"><li>Chuva acumulada em 7 dias</li><li>Umidade do solo</li></ul>
+        <details class="term-help">
+          <summary data-i18n="help_rain_q">O que é precipitação acumulada?</summary>
+          <p data-i18n="help_rain_a">É a soma da chuva estimada durante um período. Aqui, o acumulado de 7 dias é comparado com o histórico regional do mesmo ponto de grade.</p>
+        </details>
+      </article>
+
+      <article class="simple-card">
+        <span class="simple-label" data-i18n="simple_period">Período e atualização</span>
+        <p id="simple-period">Aguardando a fonte informar a data mais recente.</p>
+        <p class="source-note" id="simple-source"></p>
+        <details class="term-help">
+          <summary data-i18n="help_updated_q">Atualizado significa tempo real?</summary>
+          <p data-i18n="help_updated_a">Não. A data exibida é a última referência retornada pela fonte. Pode haver atraso de processamento e o produto pode mudar conforme o período.</p>
+        </details>
+      </article>
+
+      <article class="simple-card limitation-card">
+        <span class="simple-label" data-i18n="simple_limits">Limites desta leitura</span>
+        <p class="coverage-state" id="simple-coverage">Cobertura do modelo histórico: verificando…</p>
+        <p id="simple-limit">Os dados meteorológicos representam uma grade de dezenas de quilômetros. Não avaliam terreno, drenagem, construções ou um imóvel específico.</p>
+        <details class="term-help">
+          <summary data-i18n="help_resolution_q">O que é resolução espacial?</summary>
+          <p data-i18n="help_resolution_a">É o tamanho da área representada por cada valor. Um ponto informado com poucos metros de precisão ainda recebe uma estimativa regional, não uma inspeção local.</p>
+        </details>
+      </article>
+    </div>
+
+    <section class="catalog-status" aria-labelledby="catalog-status-title">
+      <div class="catalog-status-head">
+        <div><span class="simple-label" data-i18n="catalog_status_eb">Sobre os dados</span><h3 id="catalog-status-title" data-i18n="catalog_status_h">De onde vêm os registros do mapa.</h3></div>
+      </div>
+      <div class="catalog-status-grid">
+        <article>
+          <span class="status-chip published" data-i18n="catalog_published">Catálogo NASA COOLR</span>
+          <strong id="catalog-published-value">14.753 registros · 1915–2025</strong>
+          <p data-i18n="catalog_published_p">Reúne deslizamentos relatados por notícias, órgãos públicos e contribuições de cidadãos. Registros sem coordenada não aparecem no mapa, e registros sem data não entram nos gráficos ao longo do tempo.</p>
+        </article>
+        <article>
+          <span class="status-chip review" data-i18n="catalog_candidate">O que o catálogo não mostra</span>
+          <strong data-i18n="catalog_limit_h">Cobertura incompleta</strong>
+          <p data-i18n="catalog_limit_p">Um registro indica que um deslizamento foi relatado, não que todos foram. Lugares com menos notícias ou menos acesso à internet tendem a aparecer com menos eventos.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="metric-guide" aria-labelledby="metric-guide-title">
+      <div class="metric-guide-head">
+        <div><span class="simple-label" data-i18n="guide_eb">Como ler os números</span><h3 id="metric-guide-title" data-i18n="guide_h">O que cada medida diz — e o que não diz.</h3></div>
+        <p data-i18n="guide_intro">Os valores combinam estimativas da NASA POWER com cálculos e modelos do projeto. Nenhum deles, isoladamente, determina se um deslizamento acontecerá.</p>
+      </div>
+      <div class="metric-explain-grid">
+        <article>
+          <h4 data-i18n="guide_score_h">Score e faixas</h4>
+          <p id="simple-score-guide">O score será explicado depois do cálculo.</p>
+        </article>
+        <article>
+          <h4 data-i18n="guide_power_h">Chuva e umidade do solo</h4>
+          <p data-i18n="guide_power_p"><b>Milímetros</b> somam a chuva estimada no período; 1 mm equivale a 1 litro por metro quadrado. <b>Percentil 70</b>, por exemplo, significa valor maior que cerca de 70% dos períodos da referência local de 2001–2006. A umidade de 0 a 1 é um índice estimado: não é porcentagem nem sensor no imóvel.</p>
+        </article>
+        <article>
+          <h4 data-i18n="guide_struct_h">Recorrência histórica</h4>
+          <p data-i18n="guide_struct_p">Resume onde o catálogo teve registros recorrentes em uma célula de 1°, usando atributos até 2025. Ausência de cobertura ou valor baixo não prova que o local seja seguro.</p>
+        </article>
+        <article>
+          <h4 data-i18n="guide_metrics_h">AUC, tendência e incerteza</h4>
+          <p id="simple-auc-guide">As métricas de validação serão carregadas com os modelos.</p>
+          <p data-i18n="guide_metrics_p"><b>AUC</b> mede ordenação no teste, não a chance de ocorrer. <b>Inclinação por década</b> mede a velocidade da mudança. <b>p-valor</b> e <b>intervalo de confiança</b> descrevem incerteza estatística; não certificam segurança.</p>
+        </article>
+      </div>
+    </section>
+
+    <aside class="official-guidance">
+      <div><strong data-i18n="official_h">Precisa tomar uma decisão de segurança?</strong><p id="official-text">Consulte os alertas da Defesa Civil e do serviço meteorológico responsável pela região. Em perigo imediato, use os canais locais de emergência.</p></div>
+      <a class="official-link" id="official-link" href="https://worldweather.wmo.int/en/members.html" target="_blank" rel="noopener" data-i18n="official_link">Encontrar serviço meteorológico oficial ↗</a>
+    </aside>
+
+    <section class="telegram-notice" id="telegram-notice" aria-labelledby="telegram-title" hidden>
+      <div>
+        <span class="simple-label" data-i18n="telegram_eb">Telegram</span>
+        <h3 id="telegram-title" data-i18n="telegram_h">Enviar este resultado ao canal configurado</h3>
+        <p data-i18n="telegram_p">O servidor envia um resumo ao destinatário definido pelo operador. O navegador não recebe o token nem escolhe o chat. Isso não aciona a Defesa Civil e não é um alerta oficial.</p>
+        <p class="privacy-note" data-i18n="telegram_privacy">Ao clicar, serão enviados o local, a coordenada arredondada para duas casas, o score e a data dos dados. Nada é enviado automaticamente.</p>
+      </div>
+      <div class="telegram-action">
+        <button class="telegram-btn" id="telegram-send" type="button" disabled data-i18n="telegram_send">Enviar aviso técnico</button>
+        <span id="telegram-status" role="status" aria-live="polite">Verificando configuração segura…</span>
+      </div>
+    </section>
+
+    <div class="explore-callout">
+      <div><strong data-i18n="explore_h">Quer verificar as evidências?</strong><p data-i18n="explore_p">Abra fontes, mapas, períodos, modelos, métricas, limitações e exportações usados neste mesmo resultado.</p></div>
+      <button class="explore-btn" type="button" id="explore-main" aria-expanded="false" aria-controls="advanced-content" data-i18n="explore">Explorar dados e metodologia</button>
+    </div>
+  </div>
+</section>
+
+<div id="advanced-content" hidden>
 
 <section class="band-light abstract" aria-labelledby="resumo-h">
   <div class="wrap abs-grid">
@@ -81,13 +241,13 @@
     </div>
     <div class="abs-text">
       <p id="abs-p"></p>
-      <p class="keywords" data-i18n="keywords"><b>Palavras-chave:</b> deslizamentos de terra · MERRA-2 · Mann-Kendall · ENSO · gradient boosting · NASA POWER</p>
+      <p class="keywords" data-i18n="keywords"><b>Palavras-chave:</b> deslizamentos de terra · NASA POWER · Mann-Kendall · ENSO · gradient boosting</p>
     </div>
   </div>
   <div class="wrap"><dl class="abs-nums" id="abs-nums"></dl></div>
 </section>
 
-<section class="band-dark place-band" id="s1" aria-live="polite">
+<section class="band-dark place-band" id="s1">
   <div class="wrap">
     <div class="place-head">
       <div>
@@ -96,7 +256,7 @@
         <div class="coord" id="pl-coord"></div>
       </div>
       <div class="place-actions">
-        <span class="status" id="pl-status"></span>
+        <span class="status" id="pl-status" role="status" aria-live="polite"></span>
         <a class="pill" id="pl-wv" href="https://worldview.earthdata.nasa.gov/" target="_blank" rel="noopener" data-i18n="wv">Ver no NASA Worldview ↗</a>
         <button class="pill" type="button" id="pl-csv" data-i18n="csv">Baixar dados (CSV)</button>
         <button class="pill" type="button" id="pl-save"></button>
@@ -105,12 +265,12 @@
 
     <div class="tiles">
       <article class="tile">
-        <div class="tile-top"><span class="tile-k" data-i18n="t_now">Gatilho agora</span><span class="src">ML · NASA POWER</span></div>
+        <div class="tile-top"><span class="tile-k" data-i18n="t_now">Índice meteorológico recente</span><span class="src">ML · NASA POWER</span></div>
         <div class="tile-main"><span class="big" id="now-score">–</span><span class="badge" id="now-badge"></span></div>
         <p class="tile-txt" id="now-txt"></p>
       </article>
       <article class="tile">
-        <div class="tile-top"><span class="tile-k" data-i18n="t_struct">Risco estrutural</span><span class="src" data-i18n="t_struct_src">ML · catálogo</span></div>
+        <div class="tile-top"><span class="tile-k" data-i18n="t_struct">Recorrência histórica</span><span class="src" data-i18n="t_struct_src">ML · catálogo até 2025</span></div>
         <div class="tile-main"><span class="big" id="st-prob">–</span><span class="badge" id="st-badge"></span></div>
         <p class="tile-txt" id="st-txt"></p>
       </article>
@@ -129,7 +289,7 @@
     <figure class="fig dark">
       <div class="fig-head"><h3 data-i18n="f1_h">Condições dos últimos 120 dias</h3><span class="src" id="recent-src"></span></div>
       <div class="chart-wrap"><svg id="recent" viewBox="0 0 960 360"></svg></div>
-      <figcaption data-i18n="f1_cap"><b>Figura 1.</b> (a) Chuva diária (barras) e acumulado móvel de 7 dias (linha), com o percentil 95 local do acumulado de 7 dias (tracejado). (b) Umidade do solo superficial (GWETTOP, 0–1) e seu percentil 80. (c) Índice do modelo de disparo; tracejados marcam as faixas Elevado, Alto e Muito alto (percentis 90, 97 e 99 de dias comuns). Fonte: NASA POWER, MERRA-2.</figcaption>
+      <figcaption data-i18n="f1_cap"><b>Figura 1.</b> (a) Chuva diária (barras) e acumulado móvel de 7 dias (linha), com o percentil 95 local do acumulado de 7 dias (tracejado). (b) Umidade do solo superficial (GWETTOP, 0–1) e seu percentil 80. (c) Índice do modelo de disparo; tracejados marcam as faixas Elevado, Alto e Muito alto (percentis 90, 97 e 99 de dias comuns). Fonte: NASA POWER; o produto retornado varia com o período.</figcaption>
     </figure>
 
     <div class="split">
@@ -158,9 +318,9 @@
       <div class="hist-grid">
         <div><dl class="kpis" id="pl-kpis"></dl><p class="episode" id="pl-episode"></p><div class="trig-list" id="pl-trig"></div></div>
         <div><div class="mini-head" data-i18n="f4_a">(a) Eventos registrados por mês</div><svg class="mini" id="pl-season" viewBox="0 0 300 92"></svg></div>
-        <div><div class="mini-head" data-i18n="f4_b">(b) Risco estrutural previsto por mês</div><svg class="mini" id="pl-pred" viewBox="0 0 300 92"></svg></div>
+        <div><div class="mini-head" data-i18n="f4_b">(b) Saída histórica do modelo por mês</div><svg class="mini" id="pl-pred" viewBox="0 0 300 92"></svg></div>
       </div>
-      <figcaption data-i18n="f4_cap"><b>Figura 4.</b> Eventos do Global Landslide Catalog no raio escolhido (2007–2017) e probabilidade mensal prevista pelo modelo estrutural para a célula de 1° que contém o ponto. Um único temporal pode gerar dezenas de registros no mesmo dia; o maior episódio aparece ao lado dos totais.</figcaption>
+      <figcaption data-i18n="f4_cap"><b>Figura 4.</b> Registros do catálogo integrado COOLR/GLC no raio escolhido (datas encontradas entre 1915–2025; registros sem data permanecem no total) e saída mensal do modelo de recorrência, treinado com dados até 2025, para a célula de 1°. Um único temporal pode gerar dezenas de registros no mesmo dia.</figcaption>
     </figure>
   </div>
 </section>
@@ -179,7 +339,7 @@
     <figure class="fig">
       <div class="fig-head"><h3 data-i18n="f6_h">Deslizamentos registrados por fase, por região</h3></div>
       <div class="chart-wrap"><svg id="enso-regions" viewBox="0 0 960 330"></svg></div>
-      <figcaption data-i18n="f6_cap"><b>Figura 6.</b> Eventos mensais do Global Landslide Catalog (2007–2017) divididos pela média do próprio ano, para reduzir o efeito do aumento de catalogação; média ± erro padrão por fase do ENSO. Valores acima de 1 indicam meses com mais registros que o normal daquele ano. São só 11 anos e poucos episódios: leia como indício, não como prova.</figcaption>
+      <figcaption data-i18n="f6_cap"><b>Figura 6.</b> Eventos mensais do catálogo integrado (2007–2025) divididos pela média do próprio ano, para reduzir o efeito do aumento de catalogação; média ± erro padrão por fase do ENSO. Valores acima de 1 indicam meses com mais registros que o normal daquele ano. São só 11 anos e poucos episódios: leia como indício, não como prova.</figcaption>
     </figure>
   </div>
 </section>
@@ -188,12 +348,12 @@
   <div class="wrap">
     <div class="section-head">
       <div><span class="eyebrow" data-i18n="s3_eb">3 · Comparar lugares</span><h2 data-i18n="s3_h">Mesmo processo, sinais opostos.</h2></div>
-      <p data-i18n="s3_p">Adicione lugares para comparar lado a lado o gatilho atual, o risco estrutural, a resposta ao ENSO e a tendência. Todos os números são calculados com dados baixados da NASA.</p>
+      <p data-i18n="s3_p">Adicione lugares para comparar o índice meteorológico recente, a saída histórica do catálogo, a resposta ao ENSO e a tendência. Os itens têm períodos e limitações diferentes.</p>
     </div>
     <div class="cmp-tools"><span class="lbl-dark" data-i18n="cmp_var">Variável da tendência</span><div class="chips light" id="cmp-vars"></div></div>
     <div class="tbl-wrap">
       <table class="cmp-table">
-        <thead><tr><th data-i18n="th_place">Lugar</th><th data-i18n="t_now">Gatilho agora</th><th data-i18n="t_struct">Risco estrutural</th><th data-i18n="th_enso">El Niño − neutro</th><th data-i18n="th_slope">Declividade</th><th id="cmp-th"></th><th></th></tr></thead>
+        <thead><tr><th data-i18n="th_place">Lugar</th><th data-i18n="t_now">Índice meteorológico recente</th><th data-i18n="t_struct">Recorrência histórica</th><th data-i18n="th_enso">El Niño − neutro</th><th data-i18n="th_slope">Declividade</th><th id="cmp-th"></th><th></th></tr></thead>
         <tbody id="cmp-body"></tbody>
       </table>
     </div>
@@ -211,20 +371,24 @@
       <div><span class="eyebrow" data-i18n="s4_eb">4 · Machine learning</span><h2 data-i18n="s4_h">Dois modelos, duas perguntas.</h2></div>
       <p data-i18n="s4_p">Ambos são gradient boosting (scikit-learn), treinados com dados reais e avaliados em dados que não viram no treino. O modelo de disparo roda no seu navegador sobre os dados da NASA baixados na hora.</p>
     </div>
+    <details class="technical-help">
+      <summary data-i18n="help_metrics_q">Como ler AUC, validação e intervalo de confiança?</summary>
+      <p data-i18n="help_metrics_a">AUC mede a capacidade de ordenar casos com e sem registro no conjunto de teste; não transforma o score em probabilidade. Validação indica como o modelo foi testado fora do treino. Intervalos de confiança descrevem incerteza de uma estimativa estatística, não confiança de que um local esteja seguro.</p>
+    </details>
     <div class="models">
       <article class="model">
         <span class="role" data-i18n="m1_role">Quando?</span>
         <h3 data-i18n="m1_h">Modelo de disparo</h3>
-        <p data-i18n="m1_p">Compara a chuva e o solo nos dias em que deslizamentos foram registrados com dias comuns no mesmo lugar. As variáveis são percentis do clima local, então o modelo vale em qualquer parte do mundo.</p>
+        <p data-i18n="m1_p">Compara chuva e umidade do solo em dias com registro e dias de controle na mesma célula. Percentis locais reduzem diferenças climáticas, mas não demonstram validade universal nem probabilidade de ocorrência. No teste com lugares separados, que tem poucos casos (13), a vantagem sobre a chuva de 7 dias ainda não é conclusiva.</p>
         <dl class="ml-metrics" id="m1-metrics"></dl>
-        <figure class="fig plain"><svg class="imp" id="m1-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f8_cap"><b>Figura 8.</b> Importância por permutação (queda no AUC ao embaralhar cada variável) no teste de 2015–2017.</figcaption></figure>
+        <figure class="fig plain"><svg class="imp" id="m1-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f8_cap"><b>Figura 8.</b> Importância por permutação (queda no AUC ao embaralhar cada variável) no teste de 2020–2025.</figcaption></figure>
       </article>
       <article class="model">
-        <span class="role" data-i18n="m2_role">Onde?</span>
-        <h3 data-i18n="m2_h">Modelo estrutural</h3>
-        <p data-i18n="m2_p">Estima, para cada célula de 1° × 1° e cada mês, a chance de pelo menos um deslizamento ser registrado nos dois anos seguintes, a partir do histórico do catálogo.</p>
+        <span class="role" data-i18n="m2_role">Onde houve recorrência?</span>
+        <h3 data-i18n="m2_h">Modelo de recorrência de registros</h3>
+        <p data-i18n="m2_p">Produz uma saída por célula de 1° × 1° e mês a partir do histórico do catálogo. Usa atributos do catálogo até 2025 e se refere ao horizonte 2026–2027. Não é probabilidade calibrada nem risco físico.</p>
         <dl class="ml-metrics" id="m2-metrics"></dl>
-        <figure class="fig plain"><svg class="imp" id="m2-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f9_cap"><b>Figura 9.</b> Importância por permutação no teste de 2015–2016.</figcaption></figure>
+        <figure class="fig plain"><svg class="imp" id="m2-imp" viewBox="0 0 520 300"></svg><figcaption data-i18n="f9_cap"><b>Figura 9.</b> Importância por permutação no teste de 2017–2018.</figcaption></figure>
       </article>
     </div>
   </div>
@@ -282,9 +446,10 @@
       <table>
         <thead><tr><th data-i18n="d_src">Fonte</th><th data-i18n="d_what">Mede</th><th data-i18n="d_per">Período</th><th data-i18n="d_acc">Acesso</th><th data-i18n="d_use">Uso</th></tr></thead>
         <tbody>
-          <tr><td class="ds">NASA POWER<span class="code">MERRA-2 · PRECTOTCORR, GWETTOP, GWETROOT, T2M</span></td><td class="use" data-i18n="d1">Chuva, umidade do solo e temperatura diárias, ~0,5° × 0,625°</td><td class="per">1981–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag">Fig. 1–3</span><span class="tag" data-i18n="train">Treino</span></td></tr>
+          <tr><td class="ds">NASA POWER<span class="code">MERRA2 histórico / GEOSIT recente · PRECTOTCORR, GWETTOP, GWETROOT, T2M</span></td><td class="use" data-i18n="d1">Chuva, umidade do solo e temperatura diárias, ~0,5° × 0,625°</td><td class="per">1981–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag">Fig. 1–3</span><span class="tag" data-i18n="train">Treino</span></td></tr>
           <tr><td class="ds">NOAA CPC ONI<span class="code">Niño 3.4 · ERSST</span></td><td class="use" data-i18n="d2">Índice do El Niño / La Niña</td><td class="per">1950–</td><td><span class="tag"><span data-i18n="file">arquivo</span>, <span id="oni-upd"></span></span></td><td><span class="tag">Fig. 2, 3, 5, 6</span></td></tr>
-          <tr><td class="ds">Global Landslide Catalog<span class="code">NASA Goddard</span></td><td class="use" data-i18n="d3">Deslizamentos relatados: local, data, gatilho, mortes</td><td class="per">2007–2017</td><td><span class="tag" data-i18n="file">arquivo</span></td><td><span class="tag" data-i18n="globe">Globo</span><span class="tag" data-i18n="train">Treino</span></td></tr>
+          <tr><td class="ds">COOLR Reports Points + GLC local<span class="code">NASA Goddard · integração auditada em 15/11/2026</span></td><td class="use" data-i18n="d3">Deslizamentos relatados: local, data, gatilho, mortes</td><td class="per">1915–2025*</td><td><span class="tag" data-i18n="file">arquivo</span></td><td><span class="tag" data-i18n="globe">Globo</span><span class="tag" data-i18n="history_use">históricos locais</span></td></tr>
+          <tr><td class="ds">Artefatos dos modelos<span class="code">dados de treino não atualizados nesta etapa</span></td><td class="use" data-i18n="d_model_data">Entradas de treino dos dois modelos publicados</td><td class="per">2001/2007–2025</td><td><span class="tag" data-i18n="file">arquivo</span></td><td><span class="tag"><span data-i18n="train">Treino</span> até 2025</span></td></tr>
           <tr><td class="ds">NASA GIBS / Worldview<span class="code">IMERG · SMAP L4 · VIIRS · NDH Landslide Hazard</span></td><td class="use" data-i18n="d7">Imagens diárias de chuva, umidade do solo e satélite; perigo de deslizamento</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="globe">Globo</span><span class="tag">Worldview</span></td></tr>
           <tr><td class="ds">Copernicus DEM<span class="code">Open-Meteo Elevation · 90 m</span></td><td class="use" data-i18n="d4">Altitude</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="t_slope">Terreno</span></td></tr>
           <tr><td class="ds">Open-Meteo Geocoding<span class="code">GeoNames</span></td><td class="use" data-i18n="d5">Busca de lugares</td><td class="per">–</td><td><span class="tag live" data-i18n="live">ao vivo</span></td><td><span class="tag" data-i18n="search">Busca</span></td></tr>
@@ -296,7 +461,7 @@
       <div class="fig-head"><h3 data-i18n="f10_h">Gatilhos declarados no catálogo</h3></div>
       <div class="trigger-bar" id="trigger-bar" role="img"></div>
       <div class="trigger-legend" id="trigger-legend"></div>
-      <figcaption data-i18n="f10_cap"><b>Figura 10.</b> Gatilho declarado de cada evento do Global Landslide Catalog. Por isso o modelo de disparo usa só chuva e solo.</figcaption>
+      <figcaption data-i18n="f10_cap"><b>Figura 10.</b> Gatilho declarado de cada registro do Global Landslide Catalog. O modelo usa chuva e umidade do solo, mas rótulos desconhecidos ou não meteorológicos não excluídos também podem entrar no treino.</figcaption>
     </figure>
   </div>
 </section>
@@ -315,7 +480,7 @@
       </figure>
       <div class="limit-list">
         <div><h3 data-i18n="l1_h">Viés de notícia</h3><p id="l1-p"></p></div>
-        <div><h3 data-i18n="l2_h">Escala</h3><p data-i18n="l2_p">O pixel do MERRA-2 tem cerca de 50 km. Um deslizamento tem dezenas de metros. O índice mede condições regionais.</p></div>
+        <div><h3 data-i18n="l2_h">Escala</h3><p data-i18n="l2_p">A grade meteorológica da NASA POWER tem escala de dezenas de quilômetros. Um deslizamento tem dezenas de metros. O índice mede condições regionais.</p></div>
         <div><h3 data-i18n="l3_h">ENSO não é destino</h3><p data-i18n="l3_p">As composições mostram médias históricas. Cada El Niño é diferente, e o sinal muda conforme a estação do ano.</p></div>
         <div><h3 data-i18n="l4_h">Não é alerta oficial</h3><p data-i18n="l4_p">Em risco real, siga a Defesa Civil e o serviço meteorológico local.</p></div>
       </div>
@@ -347,6 +512,9 @@
   </div>
 </section>
 
+</div>
+</main>
+
 <footer>
   <div class="wrap">
     <p data-i18n="foot1">Data Detectives · NASA Space Apps Challenge 2026 · desafio Earth System Trend Detective. Dados: NASA POWER, NASA Global Landslide Catalog, NOAA CPC, Copernicus DEM, GeoNames, © OpenStreetMap.</p>
@@ -357,7 +525,7 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/topojson-client@3.1.0/dist/topojson-client.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/globe.gl@2.27.4/dist/globe.gl.min.js"></script>
-<script src="i18n.js"></script>
-<script src="app.js"></script>
+<script src="i18n.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>
